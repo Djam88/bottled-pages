@@ -1,0 +1,40 @@
+<div class="app">
+  <header class="bar">
+    <div class="mark"><i aria-hidden="true">P</i>Kerbside</div>
+    <div class="place" id="place"><b id="place-road">Finding your street</b><span id="place-area">&nbsp;</span></div>
+    <button class="iconbtn" id="settings-btn" type="button" aria-label="Settings">&#9881;</button>
+  </header>
+
+  <main id="v-here">
+    <div class="app-col" style="display:flex;flex-direction:column;gap:16px">
+      <div class="map" id="map" role="application" aria-label="Map of parking rules around you. Tap the map to check another spot.">
+        <div class="tiles" id="tiles"></div>
+        <svg id="overlay-svg" aria-hidden="true"></svg>
+        <div class="chip" id="gps-chip">Finding you</div>
+        <div class="ctl">
+          <button type="button" id="recentre" aria-label="Back to my position" hidden>&#9678;</button>
+          <button type="button" id="zoom-in" aria-label="Zoom in">+</button>
+          <button type="button" id="zoom-out" aria-label="Zoom out">&minus;</button>
+        </div>
+        <div class="attr">&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></div>
+      </div>
+      <div id="gps-help" class="card" hidden></div>
+      <div id="noreturn"></div>
+      <div id="cards" style="display:flex;flex-direction:column;gap:16px"></div>
+      <section class="card" id="reports" aria-labelledby="rep-h"></section>
+      <section class="card" id="carparks" aria-labelledby="cp-h"></section>
+      <p class="foot">The sign on the street is the law. Kerbside is a guide and can be wrong or out of date. Always read the sign before you leave the car.</p>
+    </div>
+  </main>
+
+  <main id="v-parked" hidden></main>
+  <main id="v-guide" hidden></main>
+</div>
+
+<nav class="tabs" aria-label="Sections"><div>
+  <button type="button" data-view="here" aria-current="page">Here</button>
+  <button type="button" data-view="parked">Parked<span class="pip" id="pip" hidden></span></button>
+  <button type="button" data-view="guide">Guide</button>
+</div></nav>
+<div class="toast" id="toast" role="status" hidden></div>
+<div class="overlay" id="overlay" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
