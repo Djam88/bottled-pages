@@ -264,6 +264,44 @@ a.btn{font:600 1.02rem/1 var(--body);color:var(--amber-ink);background:var(--amb
 }
 @media (max-width:400px){.brand{font-size:1.15rem}.nav button,.tools button{padding:10px 6px;font-size:.92rem}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* --- 2026 layer: thumb-first bar, self-sizing pads, scroll-driven reveals, entry animations, masonry notes --- */
+.tabbar{display:none}
+.toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:58;background:var(--amber);color:var(--amber-ink);font:600 1rem/1.3 var(--body);padding:12px 20px;border-radius:999px;box-shadow:0 12px 30px rgba(0,0,0,.45);max-width:calc(100% - 32px);text-align:center;transition:opacity .35s,transform .35s}
+@starting-style{.toast{opacity:0;transform:translateX(-50%) translateY(16px)}}
+.pad{field-sizing:content;resize:none;overflow:hidden}
+.padtools{margin-left:auto;display:flex;align-items:center;gap:12px}
+.padtools .count{margin-left:0}
+.inkrow button.mic{width:auto;height:auto;border-radius:999px;border:1px solid var(--hair-2);background:transparent;padding:8px 14px;font:500 .9rem/1 var(--body);color:var(--text)}
+.inkrow button.mic[aria-pressed="true"]{background:var(--rose);border-color:var(--rose);color:var(--amber-ink)}
+.sheet{animation:none;transition:opacity .3s,transform .3s cubic-bezier(.2,.8,.2,1)}
+@starting-style{.sheet{opacity:0;transform:translateY(18px) scale(.97)}}
+@keyframes stick{0%{opacity:0;transform:translateY(-26px) rotate(-9deg) scale(1.18)}60%{opacity:1;transform:translateY(3px) rotate(2deg) scale(.98)}100%{opacity:1}}
+.word.fresh{animation:stick .5s cubic-bezier(.2,.8,.2,1)}
+@keyframes thump{0%{transform:scale(2.1) rotate(-14deg);opacity:0}55%{transform:scale(.92) rotate(var(--rot));opacity:1}100%{transform:scale(1) rotate(var(--rot))}}
+.stamp.new{animation:thump .55s cubic-bezier(.2,.8,.2,1)}
+@supports (color:oklch(from red l c h)){
+  .word,.jar-card{background:linear-gradient(175deg,oklch(from var(--note) calc(l + .05) c h),var(--note) 30%,oklch(from var(--note) calc(l - .07) c h))}
+}
+@supports (color:contrast-color(red)){.cover:not(.has) span{color:contrast-color(var(--tint))}}
+@supports (display:grid-lanes){.words{display:grid-lanes}.word{min-height:120px}}
+@supports (animation-timeline:view()){
+  @media (prefers-reduced-motion:no-preference){
+    @keyframes reveal{from{opacity:.15;transform:translateY(34px)}to{opacity:1;transform:none}}
+    @keyframes heroOut{to{opacity:0;transform:translateY(-46px)}}
+    .herotext{animation:heroOut linear both;animation-timeline:scroll(root);animation-range:0 420px}
+  }
+  @media (min-width:861px) and (prefers-reduced-motion:no-preference){
+    .under,.cols .panel{animation:reveal linear both;animation-timeline:view();animation-range:entry 0% entry 42%}
+  }
+}
+@media (max-width:860px){
+  #dock{display:none}
+  .tabbar{display:flex;position:fixed;left:14px;right:14px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:55;gap:4px;padding:6px;border-radius:26px;border:1px solid var(--hair-2);background:rgba(21,33,44,.78);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);box-shadow:0 14px 34px rgba(0,0,0,.5)}
+  .tabbar button{flex:1;border:0;background:transparent;color:var(--dim);padding:13px 4px;font:600 .9rem/1 var(--body);border-radius:20px;transition:background-color .2s,color .2s}
+  .tabbar button[aria-current="true"]{background:var(--amber);color:var(--amber-ink)}
+  .wrap{padding-block-end:132px}
+  .toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+}
 </style>
 <header class="top">
   <span class="brand">Bottled Pages</span>
@@ -309,6 +347,8 @@ a.btn{font:600 1.02rem/1 var(--body);color:var(--amber-ink);background:var(--amb
     <aside class="col" id="shelf"></aside>
     <section class="col" id="notebook"></section>
   </main>
+  <nav class="tabbar" id="tabbar" aria-label="Sections"><button type="button" data-to="sea">Sea</button><button type="button" data-to="shelf">Shelf</button><button type="button" data-to="notebook">Notes</button><button type="button" data-to="add">Add</button></nav>
+  <div class="toast" id="toast" role="status" hidden></div>
   <div class="overlay" id="overlay" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Details"></div></div>
 </div>
 
@@ -408,7 +448,7 @@ function lookupCopy(e){
 
 /* ---------- overlay sheet ---------- */
 var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-var lastFocus=null, sheetCleanup=null, drift=null, tideF=0, freshId=null, surge=0, pulse=0, tiltG=0, tiltT=0;
+var lastFocus=null, sheetCleanup=null, drift=null, tideF=0, freshId=null, surge=0, pulse=0, tiltG=0, tiltT=0, parX=0, parT=0;
 function closeSheet(){
   if(sheetCleanup){try{sheetCleanup();}catch(e){} sheetCleanup=null;}
   $('overlay').hidden=true; $('sheet').replaceChildren();
@@ -528,7 +568,7 @@ function goTo(v){
 }
 function setView(v){
   view=v;document.body.setAttribute('data-view',v);
-  $('dock').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-current',b.getAttribute('data-to')===v?'true':'false');});
+  document.querySelectorAll('#dock button,#tabbar button').forEach(function(b){b.setAttribute('aria-current',b.getAttribute('data-to')===v?'true':'false');});
   if(isPhone()) window.scrollTo(0,0);
   if(!reduce) [document.querySelector('.skybox'),$('shelf'),$('notebook')].forEach(function(n,i){n.classList.remove('rise','late');void n.offsetWidth;n.classList.add('rise');if(i)n.classList.add('late');});
 }
@@ -766,10 +806,16 @@ function postmarks(){
     ['First bottle',sealed>0,'Seal your first bottle'],['Five ashore',sealed>=5,'Seal five bottles'],['Ten words',words>=10,'Keep ten words'],
     ['Seven days',days>=7,'Read on seven different days'],['Night tide',night,'Read after ten at night'],['Dawn tide',early,'Read before eight in the morning']];
 }
+var earned=null;
 function renderPostmarks(){
-  var list=postmarks(), got=list.filter(function(x){return x[1];}).length;
-  return el('div',{class:'panel'},el('span',{class:'label',text:'Postmarks · '+got+' of '+list.length}),
-    el('ul',{class:'stamps'},list.map(function(x,i){return el('li',{class:'stamp'+(x[1]?' got':''),style:'--rot:'+((i*37)%9-4)+'deg'},el('strong',{text:x[0]}),!x[1]&&el('span',{text:x[2]}));})));
+  var list=postmarks(), got=list.filter(function(x){return x[1];}), fresh={};
+  if(mode!=='loading'){
+    if(earned) got.forEach(function(x){if(!earned[x[0]])fresh[x[0]]=1;});
+    earned={};got.forEach(function(x){earned[x[0]]=1;});
+    var names=Object.keys(fresh); if(names.length) toast('New postmark: '+names.join(', '));
+  }
+  return el('div',{class:'panel'},el('span',{class:'label',text:'Postmarks · '+got.length+' of '+list.length}),
+    el('ul',{class:'stamps'},list.map(function(x,i){return el('li',{class:'stamp'+(x[1]?' got':'')+(fresh[x[0]]?' new':''),style:'--rot:'+((i*37)%9-4)+'deg'},el('strong',{text:x[0]}),!x[1]&&el('span',{text:x[2]}));})));
 }
 function openWelcome(){
   openSheet(el('span',{class:'label',text:'A letter washed up for you'}),
@@ -778,10 +824,40 @@ function openWelcome(){
       el('button',{text:'Look around with an example',onclick:function(){closeSheet();loadExample();}})));
 }
 $('welcome-btn').addEventListener('click',openWelcome);
-$('dock').addEventListener('click',function(e){
+function navClick(e){
   var b=e.target.closest('button'); if(!b) return; var to=b.getAttribute('data-to');
+  if(to==='add'){addOpen=true;refresh();goTo('shelf');if($('add-title'))$('add-title').focus();return;}
   goTo(to);
-});
+}
+$('dock').addEventListener('click',navClick);$('tabbar').addEventListener('click',navClick);
+/* swipe left or right to move between Sea, Shelf and Notes on a phone */
+(function(){var sx=0,sy=0,ok=false,order=['sea','shelf','notebook'];
+  document.addEventListener('touchstart',function(e){var t=e.target;ok=e.touches.length===1&&isPhone()&&$('overlay').hidden&&!(t.closest&&t.closest('input,textarea,select,.tabs,canvas,.inkrow'));sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
+  document.addEventListener('touchend',function(e){if(!ok)return;var c=e.changedTouches[0],dx=c.clientX-sx,dy=c.clientY-sy;
+    if(Math.abs(dx)<70||Math.abs(dy)>Math.abs(dx)*0.6)return;var i=order.indexOf(view)+(dx<0?1:-1);if(i>=0&&i<order.length)setView(order[i]);},{passive:true});})();
+/* toasts and self-growing pads */
+var toastTimer=null;
+function toast(msg){var n=$('toast');n.textContent=msg;n.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(function(){n.hidden=true;},3600);}
+var nativeGrow=!!(window.CSS&&CSS.supports&&CSS.supports('field-sizing','content'));
+function grow(ta){if(nativeGrow||!ta.isConnected)return;ta.style.height='auto';ta.style.height=(ta.scrollHeight+2)+'px';}
+document.addEventListener('input',function(e){if(e.target.classList&&e.target.classList.contains('pad'))grow(e.target);});
+/* dictation, where the browser offers speech recognition */
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+function micBtn(ta){
+  if(!SR||!standalone) return null;
+  var rec=null, btn=el('button',{type:'button',class:'mic','aria-pressed':'false',text:'Dictate',onclick:function(){
+    if(rec){rec.stop();return;}
+    try{rec=new SR();rec.lang=navigator.language||'en-GB';rec.interimResults=false;rec.continuous=false;
+      rec.onresult=function(ev){var t='';for(var i=ev.resultIndex;i<ev.results.length;i++)t+=ev.results[i][0].transcript;
+        if(t){ta.value=(ta.value&&!/\s$/.test(ta.value)?ta.value+' ':ta.value)+t.trim();ta.dispatchEvent(new Event('input',{bubbles:true}));}};
+      rec.onerror=function(ev){rec=null;btn.setAttribute('aria-pressed','false');btn.textContent='Dictate';toast(ev.error==='not-allowed'?'Allow the microphone for this site to dictate.':'Dictation did not work this time.');};
+      rec.onend=function(){rec=null;btn.setAttribute('aria-pressed','false');btn.textContent='Dictate';};
+      rec.start();btn.setAttribute('aria-pressed','true');btn.textContent='Listening…';
+    }catch(err){rec=null;toast('Dictation is not available in this browser.');}
+  }});
+  return btn;
+}
+function padTools(ta,max,words){return el('span',{class:'padtools'},micBtn(ta),counter(ta,max,words));}
 setView('sea');
 
 /* ---------- storage ---------- */
@@ -877,7 +953,7 @@ function logSession(b,to,min){
   if(to>b.pages){logError='This book has '+b.pages+' pages.';refresh();return;}
   logError='';
   b.sessions.push({id:uid('s'),at:Date.now(),from:from,to:to,min:min||0});
-  pendingMin=null;b.timerStart=null;pulse=performance.now();if(isPhone()&&to<b.pages)setView('sea');
+  pendingMin=null;b.timerStart=null;pulse=performance.now();tick(true);if(isPhone()&&to<b.pages)setView('sea');
   if(b.status==='want') b.status='reading';
   save(b.id); refresh();
 }
@@ -886,7 +962,7 @@ function logSession(b,to,min){
 function renderShelf(){
   var box=$('shelf'); box.replaceChildren();
   var list=el('ul',{class:'books'});
-  books.filter(function(b){return !isWaiting(b);}).forEach(function(b){
+  books.filter(function(b){return !isWaiting(b);}).sort(function(a,c){var la=a.sessions.length?a.sessions[a.sessions.length-1].at:a.createdAt, lc=c.sessions.length?c.sessions[c.sessions.length-1].at:c.createdAt;return (a.finishedAt?1:0)-(c.finishedAt?1:0)||lc-la;}).forEach(function(b){
     var pr=pagesRead(b), pct=Math.round(100*pr/b.pages);
     list.append(el('li',null,el('button',{class:'book','aria-current':b.id===selectedId?'true':'false',
       onclick:function(){vt(function(){selectedId=b.id;confirmDelete=false;logError='';refresh();if(isPhone())setView('notebook');});}},
@@ -1017,7 +1093,7 @@ function renderNotebook(){
         if(pendingPhoto&&pendingPhoto.id===b.id)b.photo=pendingPhoto.url;pendingPhoto=null;save(b.id);refresh();if(isPhone())setView('sea');}},
       el('h3',{text:'You reached the last page'}),
       el('p',{class:'dim small',text:'The bottle is full. Write a letter to your future self about this book, as short or as long as you like, then seal it and send it ashore.'}),
-      (function(){var ta=el('textarea',{id:'seal-msg',class:'pad',maxlength:'2000',placeholder:'Dear future me…'});return [el('label',null,'Your letter in the bottle',ta),inkRow(counter(ta,2000))];})(),
+      (function(){var ta=el('textarea',{id:'seal-msg',class:'pad',maxlength:'2000',placeholder:'Dear future me…'});return [el('label',null,'Your letter in the bottle',ta),inkRow(padTools(ta,2000))];})(),
       el('div',{class:'row'},el('label',{class:'filebtn'},'Attach a photo of a favourite page',el('input',{id:'seal-photo',type:'file',accept:'image/*',onchange:function(e){
           var f=e.target.files&&e.target.files[0];if(!f)return;
           shrinkImage(f,640,0.72).then(function(u){pendingPhoto={id:b.id,url:u};$('seal-note').textContent='Photo attached.';},function(){$('seal-note').textContent='That image could not be read.';});}})),
@@ -1050,7 +1126,7 @@ function renderNotebook(){
     p.append(el('label',null,'Your summary, in your own words',
       el('textarea',{id:'summary',class:'pad summary',maxlength:'20000',placeholder:'So far in this book…',value:b.summary,style:b.ink?'color:'+b.ink:null,
         oninput:function(e){b.summary=e.target.value;save(b.id);}})));
-    p.append(inkRow(counter($('summary')||p.querySelector('#summary'),20000,true),function(c){b.ink=c;p.querySelector('#summary').style.color=c;save(b.id);}));
+    p.append(inkRow(padTools(p.querySelector('#summary'),20000,true),function(c){b.ink=c;p.querySelector('#summary').style.color=c;save(b.id);}));
     if(typeNext){typeNext=false;clearInterval(typeTimer);var q=PROMPTS[promptIx],n=0,tgt=$('prompt-t');
       typeTimer=setInterval(function(){n++;if(!tgt.isConnected||n>q.length){clearInterval(typeTimer);if(tgt.isConnected)tgt.textContent=q;return;}tgt.textContent=q.slice(0,n)+'\u2588';},26);}
   }
@@ -1058,7 +1134,7 @@ function renderNotebook(){
     p.append(el('form',{class:'col',style:'gap:10px',onsubmit:function(e){e.preventDefault();
         var t=$('c-text').value.trim(); if(!t) return;
         freshId=uid('c');b.comments.push({id:freshId,ink:curInk(),text:t,page:parseInt($('c-page').value,10)||0,at:Date.now()});save(b.id);refresh();$('c-text').focus();}},
-      (function(){var ta=el('textarea',{id:'c-text',class:'pad short',maxlength:'1200',required:true,placeholder:'This made me think…'});return [el('label',null,'A thought, a reaction, a question',ta),inkRow(counter(ta,1200))];})(),
+      (function(){var ta=el('textarea',{id:'c-text',class:'pad short',maxlength:'1200',required:true,placeholder:'This made me think…'});return [el('label',null,'A thought, a reaction, a question',ta),inkRow(padTools(ta,1200))];})(),
       el('div',{class:'row'},el('label',{class:'narrow'},'Page',el('input',{id:'c-page',type:'number',min:'0',max:String(b.pages),value:pr||''})),
         el('button',{class:'primary',type:'submit',text:'Save comment'}))));
     if(!b.comments.length) p.append(el('p',{class:'empty',text:'No comments yet. Write the first thing this book made you think.'}));
@@ -1098,6 +1174,7 @@ function renderNotebook(){
       el('button',{text:'Keep it',onclick:function(){confirmDelete=false;refresh();}})]
     :[el('button',{class:'ghost',text:'Edit details',onclick:function(){openEdit(b);}}),el('button',{class:'ghost',text:b.example?'Remove example':'Remove book',onclick:function(){confirmDelete=true;refresh();}})]));
   box.append(p);
+  box.querySelectorAll('.pad').forEach(grow);
   freshId=null;
 }
 
@@ -1123,7 +1200,10 @@ function renderTop(){
   var st=$('stats'); st.replaceChildren();
   [[stars,'Sessions bottled'],[pages,'Pages read'],[done,'Bottles ashore'],[words,'Words kept']].forEach(function(x){
     var nb=el('b',{text:String(x[0])});st.append(el('div',{class:'stat'},nb,el('span',{text:x[1]})));countTo(nb,x[1],x[0]);});
-  $('hero-pill').textContent=mode==='loading'?'Opening your shelf':!books.length?'Your sea is waiting':f>=1?'Full moon. '+week+' pages bottled this week':week+(week===1?' page':' pages')+' bottled this week';
+  var hrs={}, best=-1, bestN=0, readToday=!!readDays()[dayKey(Date.now())];
+  books.forEach(function(b){b.sessions.forEach(function(x){var h=new Date(x.at).getHours();hrs[h]=(hrs[h]||0)+1;if(hrs[h]>bestN){bestN=hrs[h];best=h;}});});
+  var usual=bestN>=3&&!readToday&&Math.abs(new Date().getHours()-best)<=1;
+  $('hero-pill').textContent=mode==='loading'?'Opening your shelf':!books.length?'Your sea is waiting':usual?'This is your usual reading hour':f>=1?'Full moon. '+week+' pages bottled this week':week+(week===1?' page':' pages')+' bottled this week';
   var cta=$('hero-cta'), hb=current(); cta.replaceChildren();
   if(mode!=='loading'){
     if(!books.length) cta.append(el('button',{class:'primary',text:'Add your first book',onclick:function(){addOpen=true;refresh();goTo('shelf');if($('add-title'))$('add-title').focus();}}),
@@ -1261,7 +1341,7 @@ function bottle(L,t){
   var b=L.b, g=C[tintOf(b)], s=L.s, prog=Math.min(1,pagesRead(b)/b.pages), onSea=L.sea, mv=reduce?0:t, x=L.x, y=L.y, ang=L.tilt, pp=-1;
   if(L.sea){
     /* ride the swell: rise and fall with the wave under it, lean with its slope, drift a little */
-    x=L.x+Math.sin(mv/9000+L.ph)*12*s+tiltG*26*s;
+    x=L.x+Math.sin(mv/9000+L.ph)*12*s+tiltG*26*s+(L.hero?parX*16:parX*5);
     var sl=(waveY(L.layer,x+5,mv)-waveY(L.layer,x-5,mv))/10;
     y=waveY(L.layer,x,mv)-16*s; ang=L.tilt+sl*0.9+Math.sin(mv/1700+L.ph)*0.06+tiltG*0.6;
     if(L.hero&&pulse){pp=(t-pulse)/1400;if(pp>=1||pp<0){pulse=0;pp=-1;}else y+=Math.sin(pp*Math.PI*2)*5*s*(1-pp);}
@@ -1351,7 +1431,8 @@ function drawSky(t){
   LV=levels();
   var y0=LV.y0, ys=LV.ys, x, y, g, k, i, mv=reduce?0:t, M=moonAt(), f=0.34+0.66*tideF;
   tiltG+=(tiltT-tiltG)*0.08;
-  cx2.drawImage(skyLayer,0,0,W,y0+2);
+  parX+=((parT||tiltG*2.5)-parX)*0.06; if(reduce) parX=0;
+  cx2.drawImage(skyLayer,-10-parX*8,0,W+20,y0+2);M.x-=parX*14;
   brightStars.forEach(function(d){var sx=d[0]*W, sy=d[1]*y0*0.9, a=0.55+0.45*Math.sin(mv/900+d[3]);
     blob(cx2,sx,sy,d[2]*5,'rgba('+d[4]+','+(0.22*a).toFixed(3)+')');cx2.fillStyle='rgba('+d[4]+','+(0.6+0.4*a).toFixed(3)+')';cx2.beginPath();cx2.arc(sx,sy,d[2]*0.75,0,6.283);cx2.fill();});
   /* moon: halo, shaded disc, soft maria, and a phase that fills as the weekly goal is met */
@@ -1443,6 +1524,8 @@ function resize(){
 }
 if(window.ResizeObserver) new ResizeObserver(resize).observe(cv); else window.addEventListener('resize',resize);
 if(window.IntersectionObserver) new IntersectionObserver(function(en){skyVisible=en[0].isIntersecting;}).observe(cv);
+cv.parentNode.addEventListener('pointermove',function(e){if(e.pointerType==='mouse'){var r=cv.getBoundingClientRect();parT=((e.clientX-r.left)/r.width-0.5)*2;}});
+cv.parentNode.addEventListener('pointerleave',function(){parT=0;});
 cv.addEventListener('click',function(e){
   var r=cv.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top, best=null, bd=1e9;
   layout.forEach(function(L){var d=Math.hypot((L.px||L.x)-x,(L.py||L.y)-y)/(L.hit||50);if(d<bd){bd=d;best=L;}});
