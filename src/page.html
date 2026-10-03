@@ -284,6 +284,20 @@ a.btn{font:600 1.02rem/1 var(--body);color:var(--amber-ink);background:var(--amb
   .wrap{padding-block-end:132px}
   .toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 }
+.washed{background:transparent;border:0;padding:0;border-radius:0;display:flex;flex-direction:column;align-items:stretch;gap:12px;margin:20px auto 0;max-width:1120px;padding-inline:max(20px,env(safe-area-inset-left,0px)) max(20px,env(safe-area-inset-right,0px))}
+.washed > div{flex:none}
+.wcard{background:var(--card);border:1px solid var(--hair-2);border-left:4px solid var(--amber);border-radius:var(--r);padding:16px 18px;display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;justify-content:space-between;box-shadow:var(--soft)}
+.wcard > div:first-child{flex:1 1 260px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.wcard .hand{color:var(--amber-hi);font-size:1.6rem}
+.ceremony{position:fixed;inset:0;z-index:70;background:rgba(8,14,20,.9);display:flex;flex-direction:column;gap:18px;align-items:center;justify-content:center;text-align:center;padding:24px;transition:opacity .45s}
+.ceremony.out{opacity:0}
+@starting-style{.ceremony{opacity:0}}
+.waxseal{width:150px;height:150px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#d85a4c,var(--ribbon) 55%,#5c1711);display:grid;place-items:center;box-shadow:0 14px 40px rgba(0,0,0,.6),inset 0 0 0 8px rgba(255,255,255,.08);--rot:-8deg;animation:thump .6s cubic-bezier(.2,.8,.2,1) both}
+.waxseal span{font:600 1.5rem/1 var(--display);color:#ffe9dc;letter-spacing:.04em}
+.toast button{font:600 1rem/1 var(--body)}
+:root.big{font-size:115%}
+:root.big body{font-size:19.5px}
+:root.quiet *{animation:none!important;transition:none!important}
 </style>
 <header class="top">
   <span class="brand">Bottled Pages</span>
@@ -317,6 +331,11 @@ a.btn{font:600 1.02rem/1 var(--body);color:var(--amber-ink);background:var(--amb
           <label for="goal" style="flex-direction:row;align-items:center;gap:8px">Weekly goal
             <input id="goal" type="number" min="1" max="5000" style="width:92px;padding:6px 10px">
           </label> pages brings a full moon and high tide
+        </div>
+        <div class="goal small dim">
+          <label for="daily" style="flex-direction:row;align-items:center;gap:8px">Today's goal
+            <input id="daily" type="number" min="1" max="999" style="width:92px;padding:6px 10px">
+          </label> pages lights the lighthouse
         </div>
       </div>
     </div>
@@ -429,7 +448,10 @@ function lookupCopy(e){
 }
 
 /* ---------- overlay sheet ---------- */
-var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+var sysReduce=matchMedia('(prefers-reduced-motion: reduce)').matches, quiet=false, big=false;
+try{quiet=localStorage.getItem('bp-quiet')==='1';big=localStorage.getItem('bp-big')==='1';}catch(e){}
+var reduce=sysReduce||quiet;
+document.documentElement.classList.toggle('quiet',quiet);document.documentElement.classList.toggle('big',big);
 var lastFocus=null, sheetCleanup=null, drift=null, tideF=0, freshId=null, surge=0, pulse=0, tiltG=0, tiltT=0, parX=0, parT=0;
 function closeSheet(){
   if(sheetCleanup){try{sheetCleanup();}catch(e){} sheetCleanup=null;}
@@ -568,6 +590,11 @@ function openOptions(msg){
   var rows=[
     el('button',{'aria-pressed':soundOn?'true':'false',text:'Key sounds: '+(soundOn?'on':'off'),onclick:function(){soundOn=!soundOn;try{localStorage.setItem('bp-sound',soundOn?'1':'0');}catch(e){}openOptions();tick(true);}}),
     el('button',{'aria-pressed':musicOn?'true':'false',text:'Opening music: '+(musicOn?'on':'off'),onclick:function(){musicOn=!musicOn;try{localStorage.setItem('bp-music',musicOn?'1':'0');}catch(e){}if(musicOn){introPlayed=false;playIntro();}else stopIntro();openOptions();}}),
+    el('button',{'aria-pressed':big?'true':'false',text:'Larger text: '+(big?'on':'off'),onclick:function(){big=!big;try{localStorage.setItem('bp-big',big?'1':'0');}catch(e){}document.documentElement.classList.toggle('big',big);openOptions();}}),
+    el('button',{'aria-pressed':quiet?'true':'false',text:'Quiet mode (no motion): '+(quiet?'on':'off'),onclick:function(){quiet=!quiet;try{localStorage.setItem('bp-quiet',quiet?'1':'0');}catch(e){}reduce=sysReduce||quiet;document.documentElement.classList.toggle('quiet',quiet);openOptions();refresh();}}),
+    el('label',null,'Lighthouse keeper (whose lines wash up)',(function(){var names=[];QUOTES.forEach(function(q){if(names.indexOf(q[1])<0)names.push(q[1]);});
+      var sl=el('select',{id:'keeper'},el('option',{value:'',text:'Any writer'}),names.map(function(nm){var o=el('option',{value:nm,text:nm});if(settings.keeper===nm)o.selected=true;return o;}));
+      sl.addEventListener('change',function(){settings.keeper=sl.value;settings.qday=null;save('settings');refresh();});return sl;})()),
     standalone&&window.DeviceOrientationEvent&&el('button',{'aria-pressed':tiltOn?'true':'false',text:'Tilt the phone to rock the sea: '+(tiltOn?'on':'off'),onclick:function(){setTilt(!tiltOn);}}),
     el('button',{text:'This year’s shoreline',onclick:function(){openRecap(new Date().getFullYear());}}),
     standalone&&el('button',{text:'Daily reminder',onclick:openReminder}),
@@ -586,6 +613,9 @@ function bottleFacts(b){
   return b.pages+' pages over '+days+(days===1?' day':' days')+' · '+b.sessions.length+(b.sessions.length===1?' session':' sessions')+' · '+b.words.length+' words kept';
 }
 function openBottle(b){
+  if(letterHidden(b)){openSheet(el('span',{class:'label',text:'Message in a bottle'}),el('div',null,el('h2',{text:b.title}),el('p',{class:'dim',text:b.author||''})),
+      el('p',{text:'This letter is still at sea. You asked for it back on '+fmtFull(b.returnAt)+'.'}),
+      el('div',null,el('button',{text:'Open it early',onclick:function(){b.openedEarly=true;save(b.id);openBottle(b);refresh();}})));return;}
   openSheet(el('span',{class:'label',text:'Message in a bottle'}),
     el('div',null,el('h2',{text:b.title}),el('p',{class:'dim',text:b.author||''})),
     el('div',{class:'letter'},el('p',{class:'hand',style:'color:'+(b.letterInk||INKS[0][1]),text:b.message||'Read to the last page.'}),b.photo&&el('img',{class:'letterphoto',src:b.photo,alt:'Photo attached to this letter'}),el('span',{class:'dim small',text:'Sealed '+fmtFull(b.finishedAt)})),
@@ -596,18 +626,6 @@ function openBottle(b){
       el('label',{class:'filebtn'},b.photo?'Change photo':'Attach a photo',el('input',{id:'letter-photo',type:'file',accept:'image/*',onchange:function(e){var f=e.target.files&&e.target.files[0];if(f)shrinkImage(f,640,0.72).then(function(u){b.photo=u;save(b.id);openBottle(b);});}})),
       el('button',{class:'primary',text:'Open its notebook',onclick:function(){selectedId=b.id;tab='summary';closeSheet();refresh();if(isPhone())setView('notebook');else $('notebook').scrollIntoView({behavior:reduce?'auto':'smooth'});}})));
 }
-function washedUp(){
-  var now=Date.now(), t=new Date(); t.setHours(0,0,0,0); var day=86400000, pick=null, years=0;
-  books.forEach(function(b){ if(!b.finishedAt||pick) return; var d=new Date(b.finishedAt), y=t.getFullYear()-d.getFullYear();
-    if(y>=1&&Math.abs(new Date(t.getFullYear(),d.getMonth(),d.getDate()).getTime()-t.getTime())<=3*day){pick=b;years=y;} });
-  if(!pick){var old=books.filter(function(b){return b.finishedAt&&now-b.finishedAt>30*day;}); if(old.length) pick=old[Math.floor(t.getTime()/day)%old.length];}
-  var box=$('washed'); box.hidden=!pick; if(!pick) return;
-  box.replaceChildren(el('div',null,
-    el('p',{class:'small dim',text:years?(years===1?'A year ago':years+' years ago')+' you sealed '+pick.title+' with this message:':'Washed up today, from '+pick.title+' (sealed '+fmtFull(pick.finishedAt)+'):'}),
-    el('p',{class:'hand',text:pick.message||'Read to the last page.'})),
-    el('button',{text:'Open the bottle',onclick:function(){openBottle(pick);}}));
-}
-
 /* ---------- word quiz ---------- */
 function quizPool(){var seen={},out=[];books.forEach(function(b){b.words.forEach(function(w){var k=w.term.toLowerCase();if(w.meaning&&!seen[k]){seen[k]=1;out.push({w:w,b:b});}});});return out;}
 function startQuiz(){
@@ -675,7 +693,7 @@ function openRecap(year){
       fact(new Date(year,top,1).toLocaleDateString(undefined,{month:'long'}),'Busiest month')):el('p',{class:'dim',text:'Nothing bottled in '+year+' yet.'}),
     sealed.length?el('ul',{class:'recap'},sealed.sort(function(p,q){return p.finishedAt-q.finishedAt;}).map(function(b){
       return el('li',null,el('p',null,el('strong',{text:b.title}),el('span',{class:'dim small',text:' · sealed '+fmtDate(b.finishedAt)+(b.rating?' · '+'★★★★★'.slice(0,b.rating):'')})),el('p',{class:'hand',style:'font-size:1.35rem',text:b.message||''}));})):null,
-    el('div',{class:'row'},earlier&&el('button',{text:'Year before',onclick:function(){openRecap(year-1);}}),
+    el('div',{class:'row'},el('button',{class:'primary',text:'Make a poster',onclick:function(){openPoster(year);}}),earlier&&el('button',{text:'Year before',onclick:function(){openRecap(year-1);}}),
       year<new Date().getFullYear()&&el('button',{text:'Year after',onclick:function(){openRecap(year+1);}})));
 }
 
@@ -719,6 +737,7 @@ function openEdit(b){
         if(!t){err.textContent='The book needs a title.';return;}
         if(!(p>=Math.max(1,pr))){err.textContent=pr?'You have already logged up to page '+pr+', so the book needs at least that many pages.':'Enter the number of pages.';return;}
         b.title=t;b.author=$('ed-author').value.trim();b.pages=p;b.blurb=$('ed-blurb').value.trim();
+        b.due=$('ed-due').value||'';
         var tk=document.querySelector('input[name="ed-tint"]:checked');if(tk)b.tint=tk.value;
         if(b.finishedAt&&pr<p){b.finishedAt=null;b.status='reading';}
         save(b.id);closeSheet();refresh();}},
@@ -726,6 +745,7 @@ function openEdit(b){
       el('label',null,'Author',el('input',{id:'ed-author',maxlength:'100',value:b.author||''})),
       el('label',null,'Pages',el('input',{id:'ed-pages',type:'number',min:String(Math.max(1,pr)),max:'9999',value:b.pages,required:true})),
       el('fieldset',{class:'swatches'},el('legend',{class:'small dim',text:'Glass colour of its bottle'}),TINTS.map(function(k,i){var r=el('input',{type:'radio',name:'ed-tint',id:'ed-tint-'+k,value:k,'aria-label':['Sea green','Amber','Blue','Olive','Rose'][i]});r.checked=tintOf(b)===k;return el('label',{for:'ed-tint-'+k},r,el('span',{class:'sw',style:'background:var(--'+k+')'}));})),
+      el('label',null,'Finish by (optional)',el('input',{id:'ed-due',type:'date',value:b.due||''})),
       el('label',null,'About this book',el('textarea',{id:'ed-blurb',maxlength:'800',value:b.blurb||''})),
       err,el('div',null,el('button',{class:'primary',type:'submit',text:'Save details'}))));
   $('ed-title').focus();
@@ -778,7 +798,8 @@ function renderDays(){
   var box=$('days'), set=readDays(), n=0, marks=[], t=new Date(); t.setHours(12,0,0,0);
   for(var i=13;i>=0;i--){var on=!!set[dayKey(t.getTime()-i*86400000)]; if(on)n++; marks.push(el('span',{class:'d'+(on?' on':'')+(i===0?' today':'')}));}
   box.replaceChildren(el('span',{class:'label',text:'Last 14 days'}),el('span',{class:'dots',role:'img','aria-label':'You read on '+n+' of the last 14 days'},marks),
-    el('span',{class:'small dim',text:n?'Read on '+n+(n===1?' day':' days'):'No pressure. The sea waits.'}));
+    el('span',{class:'small dim',text:n?'Read on '+n+(n===1?' day':' days'):'No pressure. The sea waits.'}),
+    WX.label?el('span',{class:'small',style:'color:var(--amber-hi)',text:WX.label}):null);
 }
 function postmarks(){
   var pages=0, sess=0, sealed=0, words=0, night=false, early=false;
@@ -819,7 +840,7 @@ $('dock').addEventListener('click',navClick);$('tabbar').addEventListener('click
     if(Math.abs(dx)<70||Math.abs(dy)>Math.abs(dx)*0.6)return;var i=order.indexOf(view)+(dx<0?1:-1);if(i>=0&&i<order.length)setView(order[i]);},{passive:true});})();
 /* toasts and self-growing pads */
 var toastTimer=null;
-function toast(msg){var n=$('toast');n.textContent=msg;n.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(function(){n.hidden=true;},3600);}
+function toast(msg){var n=$('toast');n.replaceChildren(msg);n.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(function(){n.hidden=true;},3600);}
 var nativeGrow=!!(window.CSS&&CSS.supports&&CSS.supports('field-sizing','content'));
 function grow(ta){if(nativeGrow||!ta.isConnected)return;ta.style.height='auto';ta.style.height=(ta.scrollHeight+2)+'px';}
 document.addEventListener('input',function(e){if(e.target.classList&&e.target.classList.contains('pad'))grow(e.target);});
@@ -841,6 +862,151 @@ function micBtn(ta){
 }
 function padTools(ta,max,words){return el('span',{class:'padtools'},micBtn(ta),counter(ta,max,words));}
 setView('sea');
+
+/* ---------- bottles from the past, returning letters, goals, quick logging, weather ---------- */
+/* Short lines from works long out of copyright. */
+var QUOTES=[
+ ['I declare after all there is no enjoyment like reading!','Jane Austen','Pride and Prejudice',1813],
+ ['The person, be it gentleman or lady, who has not pleasure in a good novel, must be intolerably stupid.','Jane Austen','Northanger Abbey',1817],
+ ['How many a man has dated a new era in his life from the reading of a book.','Henry David Thoreau','Walden',1854],
+ ['Read the best books first, or you may not have a chance to read them at all.','Henry David Thoreau','A Week on the Concord and Merrimack Rivers',1849],
+ ['Reading maketh a full man; conference a ready man; and writing an exact man.','Francis Bacon','Of Studies',1625],
+ ['Some books are to be tasted, others to be swallowed, and some few to be chewed and digested.','Francis Bacon','Of Studies',1625],
+ ['A good book is the precious life-blood of a master spirit.','John Milton','Areopagitica',1644],
+ ['My library was dukedom large enough.','William Shakespeare','The Tempest',1611],
+ ['A man ought to read just as inclination leads him; for what he reads as a task will do him little good.','Samuel Johnson','Boswell’s Life of Johnson',1791],
+ ['One should always have something sensational to read in the train.','Oscar Wilde','The Importance of Being Earnest',1895],
+ ['’Tis the good reader that makes the good book.','Ralph Waldo Emerson','Society and Solitude',1870]
+];
+var WX={fog:0,calm:1,label:''}, litToday=false, lightSeen=false, shelfQ='', comebackSeen=false, coverCache={};
+function dayNum(){var t=new Date();t.setHours(0,0,0,0);return Math.floor(t.getTime()/86400000);}
+function quotePool(){var k=settings.keeper, p=QUOTES.filter(function(q){return !k||q[1]===k;});return p.length?p:QUOTES;}
+function todaysQuote(){var p=quotePool();return p[(dayNum()+(settings.skip||0))%p.length];}
+function letterHidden(b){return !!(b.returnAt&&Date.now()<b.returnAt&&!b.openedEarly);}
+function lastSession(){var m=null;books.forEach(function(b){if(b.sessions.length){var s=b.sessions[b.sessions.length-1];if(!m||s.at>m.s.at)m={s:s,b:b};}});return m;}
+function toastUndo(msg,fn){
+  var n=$('toast');n.replaceChildren(msg+' ',el('button',{class:'ghost',style:'color:inherit;text-decoration:underline;padding:0 4px',text:'Undo',onclick:function(){n.hidden=true;fn();}}));
+  n.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(function(){n.hidden=true;},6000);
+}
+function washedUp(){
+  var box=$('washed'), now=Date.now(), day=86400000, cards=[], t=new Date(); t.setHours(0,0,0,0);
+  if(mode!=='loading'){
+    /* a letter you asked the sea to bring back */
+    books.forEach(function(b){ if(b.finishedAt&&b.returnAt&&now>=b.returnAt&&!b.returned) cards.push(el('div',{class:'wcard'},el('div',null,
+        el('p',{class:'label',text:'A letter has come back'}),el('p',{text:'You sealed '+b.title+' on '+fmtFull(b.finishedAt)+' and asked the sea to return your letter today.'})),
+        el('button',{class:'primary',text:'Open the letter',onclick:function(){b.returned=true;save(b.id);openBottle(b);refresh();}}))); });
+    /* a quiet welcome back after a few days away */
+    var ls=lastSession();
+    if(ls&&!comebackSeen&&now-ls.s.at>3*day&&!ls.b.finishedAt){var lc=ls.b.comments[ls.b.comments.length-1];
+      cards.push(el('div',{class:'wcard'},el('div',null,el('p',{class:'label',text:'Welcome back'}),
+        el('p',{text:'You were on page '+ls.s.to+' of '+ls.b.title+'.'+(lc?' Your last note:':'')}),lc&&el('p',{class:'hand',text:lc.text.length>140?lc.text.slice(0,137)+'…':lc.text})),
+        el('button',{class:'primary',text:'Pick up where I left off',onclick:function(){comebackSeen=true;selectedId=ls.b.id;refresh();goTo('notebook');}})));}
+    /* one of your own sealed letters, on its anniversary */
+    var pick=null, years=0;
+    books.forEach(function(b){ if(!b.finishedAt||pick||letterHidden(b)) return; var d=new Date(b.finishedAt), y=t.getFullYear()-d.getFullYear();
+      if(y>=1&&Math.abs(new Date(t.getFullYear(),d.getMonth(),d.getDate()).getTime()-t.getTime())<=3*day){pick=b;years=y;} });
+    if(pick) cards.push(el('div',{class:'wcard'},el('div',null,
+      el('p',{class:'label',text:(years===1?'A year ago':years+' years ago')+' you sealed '+pick.title}),el('p',{class:'hand',text:pick.message||'Read to the last page.'})),
+      el('button',{text:'Open the bottle',onclick:function(){openBottle(pick);}})));
+    /* today's bottle from the past */
+    if(settings.qday!==dayNum()){var q=todaysQuote();
+      cards.push(el('div',{class:'wcard'},el('div',null,el('p',{class:'label',text:'A bottle from the past washed up'}),
+        el('p',{class:'hand',text:q[0]}),el('p',{class:'small dim',text:q[1]+', '+q[2]+' ('+q[3]+')'})),
+        el('div',{class:'row'},el('button',{class:'primary',text:'Keep this line',onclick:function(){settings.kept=(settings.kept||[]).filter(function(x){return x!==q[0];}).concat([q[0]]);settings.qday=dayNum();save('settings');toast('Kept. You will find it on your shelf.');refresh();}}),
+          el('button',{text:'Throw it back',onclick:function(){settings.qday=dayNum();settings.skip=(settings.skip||0)+1;save('settings');refresh();}}))));}
+  }
+  box.hidden=!cards.length; box.replaceChildren.apply(box,cards);
+}
+function keptPanel(){
+  var kept=(settings.kept||[]).map(function(txt){return QUOTES.filter(function(q){return q[0]===txt;})[0];}).filter(Boolean);
+  if(!kept.length) return null;
+  return el('div',{class:'panel'},el('span',{class:'label',text:'Kept from the sea · '+kept.length}),el('ul',{class:'recap'},kept.map(function(q){
+    return el('li',null,el('p',{class:'hand',style:'font-size:1.4rem',text:q[0]}),el('p',{class:'small dim'},q[1]+', '+q[2]+' ',
+      el('button',{class:'ghost','aria-label':'Throw back this line by '+q[1],text:'Throw back',onclick:function(){settings.kept=settings.kept.filter(function(x){return x!==q[0];});save('settings');refresh();}})));})));
+}
+function authorQuote(b){
+  if(!b.author) return null; var last=b.author.trim().split(/\s+/).pop().toLowerCase();
+  var q=QUOTES.filter(function(x){return x[1].toLowerCase().split(/\s+/).pop()===last;})[0];
+  return q?el('div',{class:'about'},el('span',{class:'label',text:'From the same pen'}),el('p',{class:'hand',style:'color:var(--amber-hi);font-size:1.4rem',text:q[0]}),el('p',{class:'small dim',text:q[2]+', '+q[3]})):null;
+}
+function weather(){
+  var ls=lastSession(), set=readDays(), n7=0, t=new Date(); t.setHours(12,0,0,0);
+  for(var i=0;i<7;i++) if(set[dayKey(t.getTime()-i*86400000)]) n7++;
+  var gap=ls?Math.floor((Date.now()-ls.s.at)/86400000):0;
+  WX.fog=ls?Math.max(0,Math.min(0.7,(gap-3)/6)):0; WX.calm=n7>=4?0.6:1;
+  WX.label=!ls?'':WX.fog>0?'Fog is drifting in. It clears the next time you read.':tideF>=1?'A clear, bright night. You met this week’s goal.':n7>=4?'Calm sea. You read on '+n7+' of the last 7 days.':'A light swell tonight.';
+}
+function todayPages(){var a=new Date();a.setHours(0,0,0,0);var n=0;books.forEach(function(b){b.sessions.forEach(function(s){if(s.at>=a.getTime())n+=s.to-s.from;});});return n;}
+function openQuickLog(){
+  var list=books.filter(function(b){return !b.finishedAt;}), cur=current(), b0=cur&&!cur.finishedAt?cur:list[0], err=el('p',{class:'err'});
+  if(!b0){goTo('shelf');return;}
+  var sel=el('select',{id:'ql-book'},list.map(function(b){var o=el('option',{value:b.id,text:b.title});if(b===b0)o.selected=true;return o;}));
+  var hint=el('p',{class:'small dim'}), upd=function(){var b=books.filter(function(x){return x.id===sel.value;})[0];hint.textContent='You were on page '+pagesRead(b)+' of '+b.pages+'.';};
+  sel.addEventListener('change',upd);
+  openSheet(el('h2',{text:'I read today'}),
+    el('form',{class:'col',style:'gap:12px',onsubmit:function(e){e.preventDefault();
+        var b=books.filter(function(x){return x.id===sel.value;})[0], to=parseInt($('ql-page').value,10), from=pagesRead(b);
+        if(!(to>from)){err.textContent='Enter a page after '+from+'.';return;}
+        if(to>b.pages){err.textContent='This book has '+b.pages+' pages.';return;}
+        selectedId=b.id;closeSheet();logSession(b,to,parseInt($('ql-min')?$('ql-min').value:0,10)||0);if(to>=b.pages)goTo('notebook');else goTo('sea');}},
+      list.length>1?el('label',null,'Book',sel):null,hint,
+      el('div',{class:'row'},el('label',null,'I am now on page',el('input',{id:'ql-page',type:'number',inputmode:'numeric',min:'1',required:true})),
+        el('label',{class:'narrow'},'Minutes (optional)',el('input',{id:'ql-min',type:'number',inputmode:'numeric',min:'0',max:'999'}))),
+      err,el('div',null,el('button',{class:'primary',type:'submit',text:'Bottle these pages'}))));
+  upd(); $('ql-page').focus();
+}
+function openQuickAdd(){
+  var err=el('p',{class:'err'}), note=el('p',{class:'small dim'}), blurb='';
+  openSheet(el('h2',{text:'What are you reading now?'}),
+    el('form',{class:'col',style:'gap:12px',onsubmit:function(e){e.preventDefault();
+        var t=$('qa-title').value.trim(), p=parseInt($('qa-pages').value,10);
+        if(!t||!(p>0)){err.textContent='Give the book a title and its number of pages.';return;}
+        var au=$('qa-author').value.trim();closeSheet();addBook(t,au,p,'reading',blurb,'');}},
+      el('label',null,'Title',el('input',{id:'qa-title',maxlength:'140',required:true})),
+      canLookup()?el('div',{class:'row'},el('button',{type:'button',text:'Look it up',onclick:async function(e){
+          var btn=e.currentTarget, t=$('qa-title').value.trim(); if(!t){err.textContent='Type the title first.';return;}
+          btn.disabled=true;note.textContent='Looking it up…';
+          try{var d=await lookupBook(t,$('qa-author').value.trim(),'');
+            if(!$('qa-title')) return;
+            if(!d||!d.found) note.textContent='Could not place that book. Fill in the pages by hand.';
+            else{if(d.title)$('qa-title').value=String(d.title).slice(0,140);if(d.author)$('qa-author').value=String(d.author).slice(0,100);if(Number(d.pages)>0)$('qa-pages').value=Math.round(Number(d.pages));
+              blurb=String(d.blurb||'').slice(0,800);pendingCover=d.cover||'';note.textContent='Found it. Check the page count against your copy.';}
+          }catch(x){if($('qa-title'))note.textContent=lookupCopy(x);}
+          if(btn.isConnected)btn.disabled=false;}})):null,note,
+      el('div',{class:'row'},el('label',null,'Author',el('input',{id:'qa-author',maxlength:'100'})),el('label',{class:'narrow'},'Pages',el('input',{id:'qa-pages',type:'number',inputmode:'numeric',min:'1',max:'9999',required:true}))),
+      err,el('div',null,el('button',{class:'primary',type:'submit',text:'Set it adrift'}))));
+  $('qa-title').focus();
+}
+function ceremony(b){
+  if(reduce) return 0;
+  var c=el('div',{class:'ceremony',role:'status'},el('div',{class:'waxseal','aria-hidden':'true'},el('span',{text:'Sealed'})),el('h2',{text:b.title}),el('p',{class:'dim',text:'Your letter is in the bottle. The tide will bring it in.'}));
+  document.body.append(c); setTimeout(function(){c.classList.add('out');},2000); setTimeout(function(){c.remove();},2500); return 2100;
+}
+function drawMiniBottle(x,ctx,cx,cy,sc,col){
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(0.5);ctx.scale(sc,sc);ctx.beginPath();ctx.moveTo(-3,-22);ctx.lineTo(3,-22);ctx.lineTo(3,-13);ctx.bezierCurveTo(3,-8,9,-7,9,-1);ctx.lineTo(9,18);ctx.quadraticCurveTo(9,21,6,21);ctx.lineTo(-6,21);ctx.quadraticCurveTo(-9,21,-9,18);ctx.lineTo(-9,-1);ctx.bezierCurveTo(-9,-7,-3,-8,-3,-13);ctx.closePath();
+  ctx.fillStyle=col;ctx.fill();ctx.fillStyle='#e9dfc0';ctx.fillRect(-4,2,8,16);ctx.fillStyle='#a3352a';ctx.fillRect(-3.4,-28,6.8,7);ctx.restore();
+}
+async function openPoster(year){
+  try{await Promise.all([document.fonts.load('600 64px Fraunces'),document.fonts.load('34px Figtree')]);}catch(e){}
+  var Wd=1080,Hd=1350,c=document.createElement('canvas'),x=c.getContext('2d'),a=new Date(year,0,1).getTime(),z=new Date(year+1,0,1).getTime(),pages=0,sess=0,sealed=[],r=rng(year),i;
+  c.width=Wd;c.height=Hd;
+  books.forEach(function(b){if(b.finishedAt>=a&&b.finishedAt<z)sealed.push(b);b.sessions.forEach(function(s){if(s.at>=a&&s.at<z){sess++;pages+=s.to-s.from;}});});
+  var g=x.createLinearGradient(0,0,0,Hd);g.addColorStop(0,'#0c1626');g.addColorStop(0.45,'#1f3350');g.addColorStop(0.62,'#c98a55');g.addColorStop(0.64,'#1f4a55');g.addColorStop(1,'#0a1b26');x.fillStyle=g;x.fillRect(0,0,Wd,Hd);
+  x.fillStyle='#f4eddc';for(i=0;i<160;i++){x.globalAlpha=0.2+r()*0.7;x.beginPath();x.arc(r()*Wd,r()*Hd*0.5,0.6+r()*1.6,0,6.283);x.fill();}
+  x.globalAlpha=1;x.textAlign='left';x.fillStyle='#f4eddc';x.font='600 92px Fraunces, Georgia, serif';x.fillText('My shoreline',80,170);
+  x.fillStyle='#dd9a4e';x.font='italic 500 92px Fraunces, Georgia, serif';x.fillText(String(year),80,270);
+  x.fillStyle='#f4eddc';x.font='34px Figtree, system-ui, sans-serif';x.fillText(pages+' pages · '+sess+' sittings · '+sealed.length+(sealed.length===1?' bottle':' bottles')+' sealed',80,340);
+  var cols=['#5b8a4c','#cf8a26','#4f8fc8','#8c9c32','#c75f4d'];
+  sealed.sort(function(p,q){return p.finishedAt-q.finishedAt;}).slice(0,10).forEach(function(b,k){var yy=930+Math.floor(k/2)*78, xx=k%2?560:80;
+    drawMiniBottle(null,x,xx+26,yy-10,1.5,cols[k%5]);x.fillStyle='#f4eddc';x.font='600 34px Fraunces, Georgia, serif';
+    var tt=b.title;while(x.measureText(tt).width>400&&tt.length>4)tt=tt.slice(0,-2);x.fillText(tt===b.title?tt:tt+'…',xx+70,yy);});
+  if(!sealed.length){x.fillStyle='#f4eddc';x.font='34px Figtree, system-ui, sans-serif';x.fillText('No bottles sealed yet this year. The sea is patient.',80,940);}
+  x.fillStyle='rgba(244,237,220,.7)';x.font='28px Figtree, system-ui, sans-serif';x.fillText('Bottled Pages',80,Hd-60);
+  var url=c.toDataURL('image/png');
+  openSheet(el('span',{class:'label',text:'Year poster'}),el('img',{class:'cardimg',src:url,alt:'Poster of your reading in '+year}),
+    standalone?el('div',{class:'row'},el('a',{class:'btn',href:url,download:'bottled-pages-'+year+'.png',text:'Save image'}),el('span',{class:'small dim',text:'On a phone, press and hold the poster to save or share it.'}))
+      :el('p',{class:'small dim',text:'Press and hold, or right-click, the poster to save it.'}));
+}
 
 /* ---------- storage ---------- */
 var dirty=new Set(), flushing=false, timer=null;
@@ -944,7 +1110,7 @@ function logSession(b,to,min){
 function renderShelf(){
   var box=$('shelf'); box.replaceChildren();
   var list=el('ul',{class:'books'});
-  books.filter(function(b){return !isWaiting(b);}).sort(function(a,c){var la=a.sessions.length?a.sessions[a.sessions.length-1].at:a.createdAt, lc=c.sessions.length?c.sessions[c.sessions.length-1].at:c.createdAt;return (a.finishedAt?1:0)-(c.finishedAt?1:0)||lc-la;}).forEach(function(b){
+  books.filter(function(b){var q=shelfQ.trim().toLowerCase();return !isWaiting(b)&&(!q||(b.title+' '+(b.author||'')).toLowerCase().indexOf(q)>=0);}).sort(function(a,c){var la=a.sessions.length?a.sessions[a.sessions.length-1].at:a.createdAt, lc=c.sessions.length?c.sessions[c.sessions.length-1].at:c.createdAt;return (a.finishedAt?1:0)-(c.finishedAt?1:0)||lc-la;}).forEach(function(b){
     var pr=pagesRead(b), pct=Math.round(100*pr/b.pages);
     list.append(el('li',null,el('button',{class:'book','aria-current':b.id===selectedId?'true':'false',
       onclick:function(){vt(function(){selectedId=b.id;confirmDelete=false;logError='';refresh();if(isPhone())setView('notebook');});}},
@@ -955,6 +1121,7 @@ function renderShelf(){
       el('span',{class:'bar'},el('i',{style:'width:'+pct+'%'}))))));
   });
   var panel=el('div',{class:'panel'},el('span',{class:'label',text:'Your shelf'}));
+  if(books.length>5) panel.append(el('input',{id:'shelf-q',type:'search',placeholder:'Find a book or author',value:shelfQ,'aria-label':'Find a book or author',oninput:function(e){shelfQ=e.target.value;var pos=e.target.selectionStart;renderShelf();var n=$('shelf-q');if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(x){}}}}));
   if(mode==='loading') panel.append(el('p',{class:'empty',text:'Opening your shelf…'}));
   else if(!books.length) panel.append(el('p',{class:'empty',text:'No books yet. Add the one you are reading, or load an example to look around.'}));
   else {
@@ -1028,6 +1195,7 @@ function renderShelf(){
       jar={id:pool[Math.floor(Math.random()*pool.length)].w.id,open:false};refresh();}})));
   }
   box.append(jp);
+  var kp=mode!=='loading'&&keptPanel(); if(kp) box.append(kp);
   if(mode!=='loading') box.append(renderPostmarks());
 }
 
@@ -1054,11 +1222,13 @@ function renderNotebook(){
       el('div',null,b.example&&el('span',{class:'badge',text:'Example'}),' ',done&&el('span',{class:'badge done',text:'Sealed'}))),
     el('div',{class:'progress'},el('span',{class:'ring',style:'--p:'+pct,'aria-hidden':'true'},el('b',{text:pct+'%'})),el('span',{class:'bar'},el('i',{style:'width:'+pct+'%'})),
       el('span',{text:'p. '+pr+' of '+b.pages})),
+    !done&&b.due&&pr<b.pages?(function(){var dl=Math.ceil((new Date(b.due+'T23:59:59').getTime()-Date.now())/86400000);return el('p',{class:'small',style:'color:var(--amber-hi)',text:dl>0?'To finish by '+fmtDate(new Date(b.due+'T12:00:00').getTime())+': about '+Math.ceil((b.pages-pr)/dl)+' pages a day.':'Your finish date has passed. Set a new one in Edit details.'});})():null,
     !done&&pph&&pr<b.pages?el('p',{class:'small dim',text:'You read about '+Math.round(pph)+' pages an hour, so roughly '+fmtDur((b.pages-pr)/pph)+' of reading left.'}):null,
-    done&&el('div',{class:'slip'},el('span',{class:'hand',text:(b.message||'Read to the last page.').length>120?b.message.slice(0,117)+'…':(b.message||'Read to the last page.')}),el('span',{class:'dim small',text:'Letter sealed '+fmtDate(b.finishedAt)}),el('button',{class:'ghost',text:'Open the bottle',onclick:function(){openBottle(b);}})),
+    done&&el('div',{class:'slip'},el('span',{class:'hand',text:letterHidden(b)?'Your letter is at sea until '+fmtFull(b.returnAt)+'.':(b.message||'Read to the last page.').length>120?b.message.slice(0,117)+'…':(b.message||'Read to the last page.')}),el('span',{class:'dim small',text:'Letter sealed '+fmtDate(b.finishedAt)}),el('button',{class:'ghost',text:'Open the bottle',onclick:function(){openBottle(b);}})),
     done&&el('div',{class:'rate',role:'group','aria-label':'Your rating'},[1,2,3,4,5].map(function(n){
       return el('button',{class:(b.rating||0)>=n?'on':'','aria-label':n+' out of 5','aria-pressed':b.rating===n?'true':'false',text:'★',
         onclick:function(){b.rating=b.rating===n?0:n;save(b.id);refresh();}});}))));
+  var aq=authorQuote(b); if(aq) p.append(aq);
   if(b.blurb) p.append(el('div',{class:'about'},el('span',{class:'label',text:'About this book'}),el('p',{class:'small',text:b.blurb})));
   else if(canLookup()) p.append(el('div',null,el('button',{id:'about-btn',text:standalone&&!b.cover?'Find cover and description':'Get a short description',onclick:async function(e){
     var btn=e.currentTarget;btn.disabled=true;btn.textContent='Looking it up…';
@@ -1071,7 +1241,7 @@ function renderNotebook(){
   if(!done&&pr>=b.pages){
     p.append(el('form',{class:'logbox finish',onsubmit:function(e){e.preventDefault();
         var L0=layout.find(function(L){return L.b===b;});if(L0&&L0.px!=null&&!reduce)drift={id:b.id,x:L0.px,y:L0.py,ang:L0.pang,s:L0.ps,t0:performance.now()};
-        b.message=$('seal-msg').value.trim()||'Read to the last page.';b.letterInk=curInk();b.finishedAt=Date.now();b.status='finished';
+        b.message=$('seal-msg').value.trim()||'Read to the last page.';b.letterInk=curInk();b.finishedAt=Date.now();b.status='finished';var rd=parseInt($('seal-return').value,10)||0;b.returnAt=rd?Date.now()+rd*86400000:null;b.returned=false;b.openedEarly=false;var wait=ceremony(b);if(drift)drift.t0+=wait;
         if(pendingPhoto&&pendingPhoto.id===b.id)b.photo=pendingPhoto.url;pendingPhoto=null;save(b.id);refresh();if(isPhone())setView('sea');}},
       el('h3',{text:'You reached the last page'}),
       el('p',{class:'dim small',text:'The bottle is full. Write a letter to your future self about this book, as short or as long as you like, then seal it and send it ashore.'}),
@@ -1080,6 +1250,7 @@ function renderNotebook(){
           var f=e.target.files&&e.target.files[0];if(!f)return;
           shrinkImage(f,640,0.72).then(function(u){pendingPhoto={id:b.id,url:u};$('seal-note').textContent='Photo attached.';},function(){$('seal-note').textContent='That image could not be read.';});}})),
         el('span',{class:'small dim',id:'seal-note',text:pendingPhoto&&pendingPhoto.id===b.id?'Photo attached.':''}),
+        el('label',{class:'narrow'},'Bring my letter back',el('select',{id:'seal-return'},el('option',{value:'0',text:'Whenever I open it'}),el('option',{value:'183',text:'In six months'}),el('option',{value:'365',text:'In a year'}))),
         el('button',{class:'primary',type:'submit',text:'Seal the bottle'}))));
   } else if(isWaiting(b)){
     p.append(el('div',{class:'logbox'},
@@ -1122,7 +1293,7 @@ function renderNotebook(){
     if(!b.comments.length) p.append(el('p',{class:'empty',text:'No comments yet. Write the first thing this book made you think.'}));
     else p.append(el('ul',{class:'items'},b.comments.slice().reverse().map(function(c){
       return el('li',{class:'item'+(c.id===freshId?' fresh':'')},el('div',null,el('p',{class:'hand',style:'color:'+(c.ink||INKS[0][1]),text:c.text}),el('p',{class:'meta',text:(c.page?'p. '+c.page+' · ':'')+fmtDate(c.at)})),
-        el('button',{class:'ghost','aria-label':'Delete comment',text:'Delete',onclick:function(){b.comments=b.comments.filter(function(x){return x.id!==c.id;});save(b.id);refresh();}}));})));
+        el('button',{class:'ghost','aria-label':'Delete comment',text:'Delete',onclick:function(){var ix=b.comments.indexOf(c);b.comments=b.comments.filter(function(x){return x.id!==c.id;});save(b.id);refresh();toastUndo('Comment deleted.',function(){b.comments.splice(ix,0,c);save(b.id);refresh();});}}));})));
   }
   if(tab==='words'){
     p.append(el('form',{class:'col',style:'gap:10px',onsubmit:function(e){e.preventDefault();
@@ -1138,7 +1309,7 @@ function renderNotebook(){
       return el('li',{class:'word'+(w.id===freshId?' fresh':''),style:'--note:var(--'+(w.note||'n1')+');color:'+(w.ink||INKS[0][1])},el('span',{class:'hand',style:'color:inherit',text:w.term}),w.meaning&&el('span',{class:'handsm',text:w.meaning}),
         el('div',{class:'foot'},el('span',{class:'meta dim small',text:(w.page?'p. '+w.page+' · ':'')+(/\s/.test(w.term)?'expression':'word')}),
           el('button',{class:'ghost','aria-label':'Make a card of '+w.term,text:'Card',onclick:function(){openCard(w,b);}}),
-          el('button',{class:'ghost','aria-label':'Delete '+w.term,text:'Delete',onclick:function(){b.words=b.words.filter(function(x){return x.id!==w.id;});save(b.id);refresh();}})));})));
+          el('button',{class:'ghost','aria-label':'Delete '+w.term,text:'Delete',onclick:function(){var ix=b.words.indexOf(w);b.words=b.words.filter(function(x){return x.id!==w.id;});save(b.id);refresh();toastUndo('Note deleted.',function(){b.words.splice(ix,0,w);save(b.id);refresh();});}})));})));
   }
   if(tab==='log'){
     if(!b.sessions.length) p.append(el('p',{class:'empty',text:'No sessions yet. Each one you log rolls more pages into this book’s bottle.'}));
@@ -1152,7 +1323,7 @@ function renderNotebook(){
   p.append(el('div',{class:'row',style:'justify-content:flex-end'},confirmDelete?[
       el('span',{class:'small dim',text:'Remove this book and its notes for good?'}),
       el('button',{class:'danger',text:'Yes, remove',onclick:function(){var id=b.id;books=books.filter(function(x){return x.id!==id;});
-        selectedId=(books[books.length-1]||{}).id||null;confirmDelete=false;removeDoc(id);refresh();}}),
+        selectedId=(books[books.length-1]||{}).id||null;confirmDelete=false;removeDoc(id);refresh();toastUndo('Book removed.',function(){books.push(b);books.sort(function(p,q){return p.createdAt-q.createdAt;});selectedId=b.id;save(b.id);refresh();});}}),
       el('button',{text:'Keep it',onclick:function(){confirmDelete=false;refresh();}})]
     :[el('button',{class:'ghost',text:'Edit details',onclick:function(){openEdit(b);}}),el('button',{class:'ghost',text:b.example?'Remove example':'Remove book',onclick:function(){confirmDelete=true;refresh();}})]));
   box.append(p);
@@ -1177,6 +1348,9 @@ function renderTop(){
   var lit=f<=0?'':f>=1?'<circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="var(--brass)"/>':
     '<path fill="var(--brass)" d="M'+c+' '+(c-r)+'A'+r+' '+r+' 0 0 1 '+c+' '+(c+r)+'A'+rx+' '+r+' 0 0 '+(f<0.5?0:1)+' '+c+' '+(c-r)+'Z"/>';
   $('moon').innerHTML='<svg width="44" height="44" viewBox="0 0 44 44" role="img" aria-label="Moon '+Math.round(f*100)+' percent full"><circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="var(--bg-2)" stroke="var(--dim)"/>'+lit+'</svg>';
+  var dg=Math.max(1,settings.daily||10), tp=todayPages(), was=litToday; litToday=tp>=dg; weather();
+  if(litToday&&!was&&mode!=='loading'&&lightSeen) toast('The lighthouse is lit. You met today\u2019s goal.'); lightSeen=mode!=='loading';
+  if(document.activeElement!==$('daily')) $('daily').value=dg;
   $('moon-text').textContent=f>=1?'Full moon and high tide. '+week+' pages this week.':week+' of '+goal+' pages this week';
   if(document.activeElement!==$('goal')) $('goal').value=goal;
   var st=$('stats'); st.replaceChildren();
@@ -1188,13 +1362,14 @@ function renderTop(){
   $('hero-pill').textContent=mode==='loading'?'Opening your shelf':!books.length?'Your sea is waiting':usual?'This is your usual reading hour':f>=1?'Full moon. '+week+' pages bottled this week':week+(week===1?' page':' pages')+' bottled this week';
   var cta=$('hero-cta'), hb=current(); cta.replaceChildren();
   if(mode!=='loading'){
-    if(!books.length) cta.append(el('button',{class:'primary',text:'Add your first book',onclick:function(){addOpen=true;refresh();goTo('shelf');if($('add-title'))$('add-title').focus();}}),
+    if(!books.length) cta.append(el('button',{class:'primary',text:'Add your first book',onclick:openQuickAdd}),
       el('button',{text:'How it works',onclick:openWelcome}));
-    else cta.append(el('button',{class:'primary',text:hb&&!hb.finishedAt&&!isWaiting(hb)?'Bottle pages':'Open the notebook',onclick:function(){goTo('notebook');if($('log-page'))$('log-page').focus();}}),
+    else cta.append(books.some(function(x){return !x.finishedAt;})?el('button',{class:'primary',text:'I read today',onclick:openQuickLog}):el('button',{class:'primary',text:'Add a book',onclick:openQuickAdd}),
       el('button',{text:'Open the shelf',onclick:function(){goTo('shelf');}}));
   }
   renderDays();
 }
+$('daily').addEventListener('change',function(e){var v=parseInt(e.target.value,10);if(v>0){settings.daily=Math.min(999,v);save('settings');renderTop();}});
 $('goal').addEventListener('change',function(e){var v=parseInt(e.target.value,10);if(v>0){settings.goal=Math.min(5000,v);save('settings');renderTop();}});
 
 /* ---------- sea at night ---------- */
@@ -1323,7 +1498,7 @@ function drawGlass(g,prog,sealed,seed){
     cx2.strokeStyle='rgba(255,230,220,.45)';cx2.lineWidth=1.5;cx2.lineCap='round';cx2.beginPath();cx2.moveTo(-5.6,-69);cx2.quadraticCurveTo(-7,-64,-6.4,-59);cx2.stroke();cx2.lineCap='butt';
   }
 }
-function waveY(i,x,mv){var Lr=LAYERS[i];return LV.y0+(LV.ys-LV.y0)*Lr[0]+Lr[1]*(Math.sin(x/Lr[2]+mv/Lr[3]+Lr[4])+0.45*Math.sin(x/(Lr[2]*0.37)-mv/(Lr[3]*0.62)+Lr[4]*2));}
+function waveY(i,x,mv){var Lr=LAYERS[i];return LV.y0+(LV.ys-LV.y0)*Lr[0]+Lr[1]*WX.calm*(Math.sin(x/Lr[2]+mv/Lr[3]+Lr[4])+0.45*Math.sin(x/(Lr[2]*0.37)-mv/(Lr[3]*0.62)+Lr[4]*2));}
 function bottle(L,t){
   var b=L.b, g=C[tintOf(b)], s=L.s, prog=Math.min(1,pagesRead(b)/b.pages), onSea=L.sea, mv=reduce?0:t, x=L.x, y=L.y, ang=L.tilt, pp=-1;
   if(L.sea){
@@ -1395,6 +1570,8 @@ function bottleLabel(L){
     label=b.title.length>30?b.title.slice(0,29)+'…':b.title;
     var sub=b.finishedAt?'sealed '+fmtDate(b.finishedAt):isWaiting(b)?'waiting to be launched':'page '+pagesRead(b)+' of '+b.pages, hy=Math.min(HB()-20,y+(L.onSea?44:42)*s);
     cx2.font='600 17px Fraunces, Georgia, serif';var hh2=Math.max(cx2.measureText(label).width,90)/2+8, hx=Math.max(hh2,Math.min(W-hh2,L.x));
+    if(b.cover){var ci=coverCache[b.id]; if(!ci||ci.src0!==b.cover){ci=new Image();ci.src0=b.cover;ci.src=b.cover;coverCache[b.id]=ci;}
+      if(ci.complete&&ci.naturalWidth){var cw=30, ch=44, cxx=Math.max(4,hx-hh2-cw+2);cx2.fillStyle='rgba(0,0,0,.5)';cx2.fillRect(cxx+2,hy-30+2,cw,ch);try{cx2.drawImage(ci,cxx,hy-30,cw,ch);}catch(e){}cx2.strokeStyle='rgba(244,237,220,.7)';cx2.lineWidth=1;cx2.strokeRect(cxx,hy-30,cw,ch);}}
     cx2.fillStyle='rgba(0,0,0,.6)';cx2.fillText(label,hx+1,hy+1);cx2.fillStyle='#f6eedb';cx2.fillText(label,hx,hy);
     cx2.font='400 11px Figtree, system-ui, sans-serif';cx2.fillStyle='rgba(0,0,0,.6)';cx2.fillText(sub,hx+1,hy+16);cx2.fillStyle='rgba(226,226,214,.85)';cx2.fillText(sub,hx,hy+15);
     return;
@@ -1422,7 +1599,7 @@ function drawSky(t){
   tiltG+=(tiltT-tiltG)*0.08;
   parX+=((parT||tiltG*2.5)-parX)*0.06; if(reduce) parX=0;
   cx2.drawImage(skyLayer,-10-parX*8,0,W+20,y0+2);M.x-=parX*14;
-  brightStars.forEach(function(d){var sx=d[0]*W, sy=d[1]*y0*0.9, a=0.55+0.45*Math.sin(mv/900+d[3]);
+  brightStars.forEach(function(d){var sx=d[0]*W, sy=d[1]*y0*0.9, a=(0.55+0.45*Math.sin(mv/900+d[3]))*(1-WX.fog)*(tideF>=1?1.25:1);
     blob(cx2,sx,sy,d[2]*5,'rgba('+d[4]+','+(0.22*a).toFixed(3)+')');cx2.fillStyle='rgba('+d[4]+','+(0.6+0.4*a).toFixed(3)+')';cx2.beginPath();cx2.arc(sx,sy,d[2]*0.75,0,6.283);cx2.fill();});
   /* moon: halo, shaded disc, soft maria, and a phase that fills as the weekly goal is met */
   blob(cx2,M.x,M.y,M.r*9,'rgba(150,190,255,0.28)');blob(cx2,M.x,M.y,M.r*2.8,'rgba(255,244,214,0.38)');
@@ -1437,7 +1614,7 @@ function drawSky(t){
   g=cx2.createLinearGradient(0,y0,0,ys);g.addColorStop(0,'#b07a55');g.addColorStop(0.08,'#3f6a70');g.addColorStop(0.2,NIGHT.sea);g.addColorStop(0.65,'#10303d');g.addColorStop(1,NIGHT.deep);
   cx2.fillStyle=g;cx2.fillRect(0,y0,W,ys-y0+12);
   g=cx2.createLinearGradient(0,y0-1,0,y0+3);g.addColorStop(0,'rgba(150,180,210,0)');g.addColorStop(0.5,'rgba(150,180,210,.35)');g.addColorStop(1,'rgba(150,180,210,0)');cx2.fillStyle=g;cx2.fillRect(0,y0-1,W,4);
-  var lx=W*0.94, lit=reduce?0.6:Math.max(0,Math.sin(mv/1500));
+  var lx=W*0.94, lit=litToday?(reduce?0.8:0.55+0.45*Math.sin(mv/1500)):0.05;
   cx2.fillStyle='#070d18';cx2.beginPath();cx2.ellipse(lx,y0+1,W<520?34:58,7,0,Math.PI,0);cx2.fill();
   if(lit>0.02){var bm=cx2.createLinearGradient(lx,0,lx-W*0.45,0);bm.addColorStop(0,'rgba(255,240,190,'+(0.42*lit).toFixed(3)+')');bm.addColorStop(1,'rgba(255,240,190,0)');
     cx2.fillStyle=bm;cx2.beginPath();cx2.moveTo(lx,y0-25);cx2.lineTo(lx-W*0.45,y0-25-30);cx2.lineTo(lx-W*0.45,y0-25+22);cx2.closePath();cx2.fill();}
@@ -1462,6 +1639,9 @@ function drawSky(t){
     }
     if(i===4&&heroSea) bottle(heroSea,t);
   }
+  if(WX.fog>0.01){var fg=cx2.createLinearGradient(0,y0-50,0,ys);fg.addColorStop(0,'rgba(176,188,200,0)');fg.addColorStop(0.25,'rgba(176,188,200,'+(0.75*WX.fog).toFixed(2)+')');fg.addColorStop(1,'rgba(176,188,200,'+(0.3*WX.fog).toFixed(2)+')');
+    cx2.fillStyle=fg;cx2.fillRect(0,y0-50,W,ys-y0+50);
+    for(k=0;k<4;k++){cx2.fillStyle='rgba(190,200,210,'+(0.22*WX.fog).toFixed(2)+')';cx2.beginPath();cx2.ellipse(((k*0.31*W+mv/1000*(6+k*3))%(W+400))-200,y0+10+k*((ys-y0)/5),220+k*40,14+k*4,0,0,6.283);cx2.fill();}}
   /* moonlight on the water */
   var n=44;
   for(k=0;k<n;k++){var u=k/(n-1), fl=0.45+0.55*Math.sin(mv/260+k*2.3)*Math.sin(mv/410+k*1.1);
@@ -1492,6 +1672,13 @@ function drawSky(t){
       cx2.fillStyle='rgba(200,215,235,.35)';cx2.beginPath();cx2.ellipse(px2-0.6-depth,py2-0.5-depth*0.6,0.8+depth*1.6,0.4+depth*0.6,0,0,6.283);cx2.fill();}
     else{var sp=Math.max(0,Math.sin(mv/700+d[2]*3));if(sp>0.25)blob(cx2,px2,py2,1.5+depth*4,'rgba(235,242,255,'+(0.5*sp).toFixed(3)+')');}
   });
+  /* each sealed book leaves a keepsake on the sand */
+  books.forEach(function(b){ if(!b.finishedAt) return; var hh=hash(b.id+'k'), kx=24+frac(hh*0.6180339)*(W-48), ky=ys+wet*0.62+frac(hh*0.3819)*Math.max(4,HB()-ys-wet*0.62-12), kind=hh%3;
+    cx2.save();cx2.translate(kx,ky);
+    if(kind===0){cx2.fillStyle='rgba(236,226,206,.9)';cx2.beginPath();cx2.arc(0,0,6,Math.PI,0);cx2.closePath();cx2.fill();cx2.strokeStyle='rgba(120,100,80,.7)';cx2.lineWidth=0.7;for(var q=-2;q<=2;q++){cx2.beginPath();cx2.moveTo(0,0);cx2.lineTo(q*2.6,-5.4+Math.abs(q)*0.9);cx2.stroke();}}
+    else if(kind===1){cx2.fillStyle='rgba(226,140,110,.9)';cx2.beginPath();for(var q2=0;q2<10;q2++){var rr=q2%2?2.4:6.4, an=q2*Math.PI/5-Math.PI/2;cx2.lineTo(Math.cos(an)*rr,Math.sin(an)*rr*0.6);}cx2.closePath();cx2.fill();}
+    else{blob(cx2,0,-5,12,'rgba(255,206,130,0.5)');cx2.fillStyle='#1b1410';cx2.fillRect(-3.4,-9,6.8,9);cx2.fillStyle='rgba(255,214,140,.95)';cx2.fillRect(-2,-7.4,4,5.6);cx2.fillStyle='#1b1410';cx2.fillRect(-4.2,-10.4,8.4,1.8);}
+    cx2.restore(); });
   sandDust.forEach(function(d){var sy=ys+wet*0.5+d[1]*(H-ys-wet*0.5);cx2.fillStyle=d[3]?'rgba(0,0,0,.26)':'rgba(226,224,205,.2)';cx2.fillRect(d[0]*W,sy,d[2],d[2]);});
   cx2.lineCap='round';cx2.shadowColor='rgba(220,235,255,.7)';cx2.shadowBlur=7;cx2.strokeStyle='rgba(238,244,250,.86)';cx2.lineWidth=2.4;cx2.beginPath();
   for(x=0;x<=W+8;x+=6){var fy=shoreY(x,ys,mv);if(x)cx2.lineTo(x,fy);else cx2.moveTo(x,fy);}
@@ -1522,7 +1709,7 @@ cv.addEventListener('click',function(e){
   if(best.hero){if(best.b.finishedAt)openBottle(best.b);else if(isPhone())setView('notebook');else $('notebook').scrollIntoView({behavior:reduce?'auto':'smooth'});return;}
   selectedId=best.b.id;confirmDelete=false;logError='';refresh();
 });
-if(!reduce){(function loop(t){if(skyVisible&&!document.hidden)drawSky(t);requestAnimationFrame(loop);})(0);}
+(function loop(t){if(!reduce&&skyVisible&&!document.hidden)drawSky(t);requestAnimationFrame(loop);})(0);
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){drawSky(performance.now());});
 document.addEventListener('visibilitychange',function(){if(document.hidden&&dirty.size){clearTimeout(timer);flush();}});
 
