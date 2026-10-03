@@ -4,10 +4,10 @@
 /* Layout: a sea at dusk on top where each book floats as a bottle (sealed ones wash ashore), then the shelf on the left and the open book's typed notebook on the right. Single vintage paper look by choice. */
 :root{
   color-scheme: light;
-  --paper:#eadfc6; --sheet:#f6eedb; --line:#c7b68e; --ink:#2a251f; --ink-dim:#655a4c;
-  --ribbon:#a3352a; --brass:#a67c2e; --sea:#3a7d78; --sea-deep:#1f4f55; --sand:#dcc592; --dusk:#e9c79c; --sun:#d88a4f;
-  --key:#221e19; --key-shadow:#0e0c0a; --shadow:rgba(42,37,31,.16);
-  --g1:#3f8a72; --g2:#a9772a; --g3:#4d7fa3; --g4:#7c8a3c; --g5:#9b5548;
+  --paper:#e9d3a2; --sheet:#fff5dc; --line:#b89a5c; --ink:#1b1611; --ink-dim:#55452e;
+  --ribbon:#c0281b; --brass:#cf9a2a; --sea:#0e7a7a; --sea-deep:#0a4f58; --navy:#1a2f63; --sand:#dcc592; --dusk:#e9c79c; --sun:#d88a4f;
+  --key:#17130f; --key-shadow:#000000; --on-key:#fff5dc; --on-key-dim:#d9c596; --shadow:rgba(27,22,17,.26);
+  --g1:#2f9c7c; --g2:#cf8a26; --g3:#3f86c8; --g4:#8c9c32; --g5:#c75f4d;
   --display:"Special Elite","Courier New",Courier,monospace;
   --body:"Courier Prime","Courier New",Courier,monospace;
   --hand:"Caveat","Segoe Print","Bradley Hand",cursive;
@@ -22,26 +22,29 @@ h3{font-size:1.05rem}
 p{margin:0}
 .dim{color:var(--ink-dim)}
 .small{font-size:.875rem}
-.top{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:flex-end;justify-content:space-between;border-bottom:3px double var(--ink);padding-bottom:12px}
-.status{font-size:.8125rem;color:var(--ink-dim)}
-.status[data-kind="error"]{color:var(--ribbon)}
+.top{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:flex-end;justify-content:space-between;background:var(--key);color:var(--on-key);padding:16px 18px 14px;border-radius:4px;border-bottom:5px solid var(--ribbon);box-shadow:4px 5px 0 var(--shadow)}
+.top h1{color:var(--on-key)}
+.top .dim{color:var(--on-key-dim)}
+.status{font-size:.8125rem;color:var(--on-key-dim)}
+.status[data-kind="error"]{color:var(--brass)}
 
-.skybox{position:relative;border:1px solid var(--ink);border-radius:3px;overflow:hidden;background:var(--key);box-shadow:4px 5px 0 var(--shadow)}
+.skybox{position:relative;z-index:51;border:1.5px solid var(--ink);border-radius:3px;overflow:hidden;background:var(--key);box-shadow:4px 5px 0 var(--shadow)}
 canvas{display:block;width:100%;height:540px;cursor:pointer}
-.sky-empty{position:absolute;inset:0 0 auto 0;height:540px;display:flex;align-items:center;justify-content:center;padding:16px;pointer-events:none}
+.sky-empty{position:absolute;inset:0 0 auto 0;height:540px;display:flex;align-items:flex-end;justify-content:center;padding:16px 16px 34px;pointer-events:none}
 .sky-empty > div{background:var(--sheet);border:1px solid var(--ink);padding:14px 18px;max-width:38ch;text-align:center;display:flex;flex-direction:column;gap:4px;transform:rotate(-1.2deg);box-shadow:3px 4px 0 var(--shadow)}
 .under{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:center;padding:14px 16px;border-top:1px solid var(--ink);background:var(--sheet)}
 .moon{display:flex;gap:12px;align-items:center;min-width:0}
 .moon svg{flex:none}
 .goal{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .stats{display:flex;flex-wrap:wrap;gap:8px 24px;margin-left:auto}
-.stat b{font-family:var(--display);font-weight:400;font-size:1.4rem;font-variant-numeric:tabular-nums;display:block;line-height:1.1}
+.stat b{font-family:var(--display);font-weight:400;color:var(--navy);font-size:1.7rem;font-variant-numeric:tabular-nums;display:block;line-height:1.1}
 .stat span{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim)}
 
 .cols{display:grid;grid-template-columns:300px minmax(0,1fr);gap:20px;align-items:start}
 .col{display:flex;flex-direction:column;gap:14px;min-width:0}
-.panel{background:var(--sheet);border:1px solid var(--line);border-radius:3px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0;box-shadow:3px 4px 0 var(--shadow)}
-.label{font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim)}
+.panel{background:var(--sheet);border:1.5px solid var(--ink);border-top:5px solid var(--sea);border-radius:3px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0;box-shadow:3px 4px 0 var(--shadow)}
+.label{font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--sea-deep);font-weight:700}
+.label::before{content:"";display:inline-block;width:9px;height:9px;background:var(--ribbon);margin-right:8px;vertical-align:baseline}
 
 /* typewriter keys */
 button{font:400 .875rem/1 var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--ink);background:var(--sheet);border:1.5px solid var(--ink);border-radius:999px;padding:10px 16px 8px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
@@ -75,7 +78,7 @@ label{display:flex;flex-direction:column;gap:4px;font-size:.8125rem;color:var(--
 .badge.done{color:var(--ribbon);border-color:var(--ribbon)}
 .jar-card{background:var(--paper);border:1px dashed var(--ink-dim);border-radius:2px;padding:14px;text-align:center;width:100%;display:block;box-shadow:none;text-transform:none;letter-spacing:0;font:400 .9375rem/1.4 var(--body)}
 .jar-card:active{transform:none;box-shadow:none}
-.hand{font-family:var(--hand);font-size:1.7rem;line-height:1.1;color:var(--sea-deep);overflow-wrap:anywhere}
+.hand{font-family:var(--hand);font-size:1.7rem;line-height:1.1;color:var(--navy);overflow-wrap:anywhere}
 
 .nb-top{display:flex;gap:16px;align-items:flex-start}
 .nb-top > .nb-head{flex:1;min-width:0}
@@ -105,7 +108,7 @@ label{display:flex;flex-direction:column;gap:4px;font-size:.8125rem;color:var(--
 .tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1.5px solid var(--ink);padding-bottom:0}
 .tabs button{border-radius:6px 6px 0 0;border-bottom:0;box-shadow:none;background:var(--paper);border-color:var(--line);padding:10px 12px 8px}
 .tabs button:active{transform:none}
-.tabs button[aria-selected="true"]{background:var(--key);color:var(--sheet);border-color:var(--key)}
+.tabs button[aria-selected="true"]{background:var(--ribbon);color:var(--on-key);border-color:var(--ribbon)}
 .prompt{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:space-between;border:1px dashed var(--ink-dim);padding:10px 12px}
 .prompt p{flex:1 1 220px;min-width:0;min-height:2.6em}
 .summary{min-height:240px;font-size:1.0625rem;line-height:1.7em;padding-top:0;background-color:var(--sheet);background-image:repeating-linear-gradient(to bottom,transparent 0,transparent calc(1.7em - 1px),var(--line) calc(1.7em - 1px),var(--line) 1.7em);background-attachment:local;border-color:var(--ink-dim)}
@@ -130,7 +133,7 @@ button.ghost{white-space:nowrap}
 @media (max-width:480px){.cover:not(.sm){width:72px;padding:6px}.cover:not(.sm) span{font-size:.6875rem}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 /* --- texture, overlays, motion --- */
-body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;opacity:.2;mix-blend-mode:multiply;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .28 0 0 0 0 .18 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E")}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;opacity:.14;mix-blend-mode:multiply;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .28 0 0 0 0 .18 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E")}
 :root{--scrim:rgba(42,37,31,.6)}
 h1 .ch{display:inline-block}
 .headright{display:flex;flex-direction:column;gap:4px;align-items:flex-end}
@@ -180,26 +183,42 @@ input[type=radio]{width:auto}
 .sw{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--ink);display:inline-block}
 .dock{display:none}
 @media (max-width:820px){
-  .dock{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--key);border-top:2px solid var(--brass);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));gap:4px}
+  .dock{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:55;background:var(--key);border-top:3px solid var(--brass);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));gap:4px}
   .dock button{flex:1;background:transparent;color:var(--sheet);border:0;box-shadow:none;padding:12px 2px 10px;font-size:.75rem;border-radius:6px}
   .wrap{padding-block-end:104px}
 }
 .optlist{display:flex;flex-direction:column;gap:10px;align-items:stretch}
 .optlist button{text-align:left;border-radius:6px;white-space:normal}
 .optlist .filebtn{padding:10px 16px}
-.dock button[aria-current="true"]{background:var(--sheet);color:var(--key)}
+.dock button[aria-current="true"]{background:var(--ribbon);color:var(--on-key)}
 button,.book,.jar-card{transition:transform .08s ease,box-shadow .08s ease,background-color .15s ease}
 @media (max-width:820px){
   body[data-view="sea"] .cols{display:none}
   body[data-view="shelf"] .skybox,body[data-view="shelf"] .washed,body[data-view="shelf"] #notebook{display:none}
   body[data-view="notebook"] .skybox,body[data-view="notebook"] .washed,body[data-view="notebook"] #shelf{display:none}
-  .top{align-items:center;flex-wrap:nowrap;padding-bottom:8px}
+  .top{align-items:center;flex-wrap:nowrap;padding:12px 14px 10px}
   .top > div:first-child p{display:none}
   h1{font-size:1.5rem}
   .headright{flex-direction:row;align-items:center;gap:10px}
   .status{display:none}
   .wrap{gap:14px;padding-block-start:12px}
 }
+.under{border-top:4px solid var(--brass)}
+.bar{background:var(--paper)}
+.bar i{background:linear-gradient(90deg,var(--sea-deep),var(--sea))}
+.progress .bar{height:10px;border:1px solid var(--ink)}
+.book[aria-current="true"]{background:var(--paper);box-shadow:inset 5px 0 0 var(--ribbon)}
+.d{border-color:var(--ink-dim)}
+.d.on{background:var(--sea);border-color:var(--sea-deep)}
+.badge{color:var(--navy);border-color:var(--navy)}
+.about{border-left-color:var(--brass)}
+.logbox{border:1.5px solid var(--ink);background:var(--paper)}
+.prompt{border-color:var(--sea);background:var(--paper)}
+.word{border-top:4px solid var(--brass)}
+.stamp.got{background:color-mix(in srgb,var(--ribbon) 9%,transparent)}
+.rate button.on{color:var(--brass)}
+.top #options-btn{background:var(--brass);color:var(--key);border-color:var(--on-key);box-shadow:0 3px 0 var(--key-shadow)}
+.optlist button[aria-pressed="true"]{background:var(--sea);color:var(--on-key);border-color:var(--sea-deep)}
 a.btn{font:400 .875rem/1 var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--sheet);background:var(--key);border:1.5px solid var(--brass);border-radius:999px;padding:10px 16px 8px;text-decoration:none;display:inline-block;box-shadow:0 3px 0 var(--key-shadow)}
 @media (max-width:820px){.headright{align-items:flex-start}.tools{justify-content:flex-start}}
 </style>
@@ -1042,7 +1061,7 @@ var grainPat=(function(){try{var c=document.createElement('canvas'),x=c.getConte
   for(i=0;i<d.data.length;i+=4){var v=Math.random()*255;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255;}x.putImageData(d,0,0);return cx2.createPattern(c,'repeat');}catch(e){return null;}})();
 var css=getComputedStyle(document.documentElement), C={};
 ['paper','sheet','line','ink','ink-dim','ribbon','brass','sea','sea-deep','sand','dusk','sun','g1','g2','g3','g4','g5'].forEach(function(k){C[k]=css.getPropertyValue('--'+k).trim();});
-var NIGHT={sea:'#13293b',deep:'#050d15',sand:'#5d594d'};
+var NIGHT={sea:'#11405e',deep:'#041320',sand:'#6b6048'};
 var brightStars=(function(){var r=rng(9),a=[];for(var i=0;i<38;i++)a.push([r(),r(),0.7+r()*1.1,r()*6.28,r()<0.25?'255,226,190':r()<0.5?'190,210,255':'255,255,255']);return a;})();
 var sandDust=(function(){var r=rng(23),a=[];for(var i=0;i<460;i++)a.push([r(),r(),0.6+r()*1.2,r()<0.5]);return a;})();
 var waveSegs=(function(){var r=rng(41),a=[];for(var i=0;i<34;i++)a.push([r(),r(),30+r()*110,0.3+r()*0.9,r()*6.28]);return a;})();
@@ -1050,18 +1069,18 @@ var foamDots=(function(){var r=rng(57),a=[];for(var i=0;i<70;i++)a.push([r(),r()
 function frac(x){return x-Math.floor(x);}
 function hexA(h,a){h=h.replace('#','');if(h.length===3)h=h.replace(/(.)/g,'$1$1');var n=parseInt(h,16);return 'rgba('+(n>>16)+','+((n>>8)&255)+','+(n&255)+','+a+')';}
 function levels(){return {y0:H*0.38, ys:H*(0.73+0.03*tideF)};}
-function moonAt(){var y0=H*0.38;return {x:W*0.76,y:y0*0.36,r:Math.max(13,Math.min(24,H*0.055))};}
+function moonAt(){var y0=H*0.38;return {x:W*0.76,y:y0*0.36,r:Math.max(18,Math.min(28,H*0.06))};}
 function shoreY(x,ys,mv){return ys+Math.sin(x/70+mv/2400)*4+Math.sin(x/23+mv/1700)*1.4;}
 function blob(ctx,x,y,r,col){var g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,col);g.addColorStop(1,col.replace(/[\d.]+\)$/,'0)'));ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,6.283);ctx.fill();}
 function buildSky(){
   /* the still part of the sky is painted once per size: gradient, Milky Way and the faint stars */
   var y0=H*0.38, c=document.createElement('canvas'), x=c.getContext('2d'), r=rng(77), i, t, px, py;
   c.width=Math.max(1,Math.round(W*DPR));c.height=Math.max(1,Math.round((y0+2)*DPR));x.setTransform(DPR,0,0,DPR,0,0);
-  var g=x.createLinearGradient(0,0,0,y0);g.addColorStop(0,'#03050c');g.addColorStop(0.5,'#0a1230');g.addColorStop(0.86,'#17284b');g.addColorStop(1,'#2a3d5e');
+  var g=x.createLinearGradient(0,0,0,y0);g.addColorStop(0,'#04061a');g.addColorStop(0.45,'#0d1a55');g.addColorStop(0.82,'#1f3c8c');g.addColorStop(1,'#3d6aa8');
   x.fillStyle=g;x.fillRect(0,0,W,y0+2);
   var ax=W*0.02, ay=-y0*0.15, bx=W*0.62, by=y0*1.15, nx=-(by-ay), ny=bx-ax, nl=Math.hypot(nx,ny); nx/=nl; ny/=nl;
   for(i=0;i<150;i++){t=r();var off=(r()+r()+r()-1.5)*y0*0.2;px=ax+(bx-ax)*t+nx*off;py=ay+(by-ay)*t+ny*off;
-    blob(x,px,py,(26+r()*70)*(W<520?0.7:1),r()<0.25?'rgba(225,195,170,0.028)':'rgba(150,172,225,0.036)');}
+    blob(x,px,py,(26+r()*70)*(W<520?0.7:1),r()<0.25?'rgba(240,190,160,0.04)':r()<0.5?'rgba(170,140,235,0.045)':'rgba(140,175,245,0.055)');}
   for(i=0;i<26;i++){t=0.15+r()*0.7;var o2=(r()-0.5)*y0*0.07;blob(x,ax+(bx-ax)*t+nx*o2,ay+(by-ay)*t+ny*o2,14+r()*30,'rgba(3,5,12,0.11)');}
   var count=Math.round(W*y0/330);
   for(i=0;i<count;i++){
@@ -1070,7 +1089,8 @@ function buildSky(){
     x.globalAlpha=(0.25+r()*0.7)*fade;x.fillStyle=r()<0.2?'#ffe6c4':r()<0.45?'#c6d6ff':'#ffffff';var sz=0.35+r()*r()*1.2;x.beginPath();x.arc(px,py,sz,0,6.283);x.fill();
   }
   x.globalAlpha=1;
-  for(i=0;i<5;i++) blob(x,W*(0.1+r()*0.8),y0*(0.78+r()*0.16),90+r()*140,'rgba(120,140,175,0.05)');
+  for(i=0;i<5;i++) blob(x,W*(0.1+r()*0.8),y0*(0.78+r()*0.16),90+r()*140,'rgba(110,170,215,0.07)');
+  blob(x,W*0.5,y0*1.05,W*0.6,'rgba(80,190,200,0.12)');
   skyLayer=c;
 }
 function buildLayout(){
@@ -1218,11 +1238,11 @@ function bottleLabel(L){
 }
 function waveLayer(i,mv){
   var Lr=LAYERS[i], by=LV.y0+(LV.ys-LV.y0)*Lr[0], x, g=cx2.createLinearGradient(0,by-Lr[1]*1.5,0,by+14+i*9);
-  g.addColorStop(0,'rgba(58,92,120,'+(0.3+i*0.07).toFixed(2)+')');g.addColorStop(0.3,'rgba(14,32,48,'+(0.38+i*0.05).toFixed(2)+')');g.addColorStop(1,'rgba(5,13,21,0)');
+  g.addColorStop(0,'rgba(64,140,180,'+(0.34+i*0.07).toFixed(2)+')');g.addColorStop(0.3,'rgba(12,48,78,'+(0.4+i*0.05).toFixed(2)+')');g.addColorStop(1,'rgba(4,19,32,0)');
   cx2.fillStyle=g;cx2.beginPath();cx2.moveTo(0,LV.ys+12);
   for(x=0;x<=W+10;x+=10) cx2.lineTo(x,waveY(i,x,mv));
   cx2.lineTo(W+10,LV.ys+12);cx2.closePath();cx2.fill();
-  cx2.strokeStyle='rgba(175,205,228,'+(0.07+i*0.04).toFixed(2)+')';cx2.lineWidth=0.6+i*0.22;cx2.beginPath();
+  cx2.strokeStyle='rgba(170,225,245,'+(0.1+i*0.055).toFixed(2)+')';cx2.lineWidth=0.7+i*0.25;cx2.beginPath();
   for(x=0;x<=W+10;x+=10){var yy=waveY(i,x,mv);if(x)cx2.lineTo(x,yy);else cx2.moveTo(x,yy);}
   cx2.stroke();
 }
@@ -1236,7 +1256,7 @@ function drawSky(t){
   brightStars.forEach(function(d){var sx=d[0]*W, sy=d[1]*y0*0.9, a=0.55+0.45*Math.sin(mv/900+d[3]);
     blob(cx2,sx,sy,d[2]*5,'rgba('+d[4]+','+(0.22*a).toFixed(3)+')');cx2.fillStyle='rgba('+d[4]+','+(0.6+0.4*a).toFixed(3)+')';cx2.beginPath();cx2.arc(sx,sy,d[2]*0.75,0,6.283);cx2.fill();});
   /* moon: halo, shaded disc, soft maria, and a phase that fills as the weekly goal is met */
-  blob(cx2,M.x,M.y,M.r*8,'rgba(170,195,245,0.2)');blob(cx2,M.x,M.y,M.r*2.6,'rgba(225,235,255,0.3)');
+  blob(cx2,M.x,M.y,M.r*9,'rgba(150,190,255,0.28)');blob(cx2,M.x,M.y,M.r*2.8,'rgba(255,244,214,0.38)');
   cx2.save();cx2.beginPath();cx2.arc(M.x,M.y,M.r,0,6.283);cx2.clip();
   g=cx2.createRadialGradient(M.x+M.r*0.3,M.y-M.r*0.3,M.r*0.1,M.x,M.y,M.r*1.05);g.addColorStop(0,'#fffdf2');g.addColorStop(0.7,'#e9e6d6');g.addColorStop(1,'#c4c2b6');
   cx2.fillStyle=g;cx2.fillRect(M.x-M.r,M.y-M.r,M.r*2,M.r*2);
@@ -1245,7 +1265,7 @@ function drawSky(t){
     if(f>0.5)cx2.ellipse(M.x,M.y,rx,M.r+1,0,Math.PI/2,Math.PI*1.5,false);else cx2.ellipse(M.x,M.y,rx,M.r+1,0,Math.PI/2,-Math.PI/2,true);cx2.fill();}
   cx2.restore();
   /* sea: a dark base, then layered swells that move at different speeds */
-  g=cx2.createLinearGradient(0,y0,0,ys);g.addColorStop(0,'#1b3448');g.addColorStop(0.12,NIGHT.sea);g.addColorStop(0.6,'#0a1a28');g.addColorStop(1,NIGHT.deep);
+  g=cx2.createLinearGradient(0,y0,0,ys);g.addColorStop(0,'#2a6588');g.addColorStop(0.12,NIGHT.sea);g.addColorStop(0.6,'#0a2a44');g.addColorStop(1,NIGHT.deep);
   cx2.fillStyle=g;cx2.fillRect(0,y0,W,ys-y0+12);
   g=cx2.createLinearGradient(0,y0-1,0,y0+3);g.addColorStop(0,'rgba(150,180,210,0)');g.addColorStop(0.5,'rgba(150,180,210,.35)');g.addColorStop(1,'rgba(150,180,210,0)');cx2.fillStyle=g;cx2.fillRect(0,y0-1,W,4);
   var lx=W*0.94, lit=reduce?0.6:Math.max(0,Math.sin(mv/1500));
@@ -1277,15 +1297,15 @@ function drawSky(t){
   var n=44;
   for(k=0;k<n;k++){var u=k/(n-1), fl=0.45+0.55*Math.sin(mv/260+k*2.3)*Math.sin(mv/410+k*1.1);
     y=y0+2+Math.pow(u,1.35)*(ys-y0-8);var hw=(3+u*u*46+u*10)*(0.55+0.45*Math.abs(fl));
-    cx2.fillStyle='rgba(238,241,228,'+Math.max(0,(0.62-u*0.34)*(0.35+0.65*Math.abs(fl))*(0.5+0.5*f)).toFixed(3)+')';
+    cx2.fillStyle='rgba(255,246,214,'+Math.max(0,(0.85-u*0.4)*(0.4+0.6*Math.abs(fl))*(0.6+0.4*f)).toFixed(3)+')';
     cx2.beginPath();cx2.ellipse(M.x+Math.sin(k*1.9+mv/1100)*(2+u*16),y,hw,0.7+u*1.5,0,0,6.283);cx2.fill();}
   /* beach: dry sand, wet band that mirrors the sky, a wash that slides in and out, pebbles, glints, foam */
-  g=cx2.createLinearGradient(0,ys,0,H);g.addColorStop(0,'#666255');g.addColorStop(1,'#48453c');
+  g=cx2.createLinearGradient(0,ys,0,H);g.addColorStop(0,'#7d7052');g.addColorStop(1,'#5a4d36');
   cx2.fillStyle=g;cx2.beginPath();cx2.moveTo(0,H);cx2.lineTo(0,shoreY(0,ys,mv));
   for(x=0;x<=W+8;x+=6) cx2.lineTo(x,shoreY(x,ys,mv));
   cx2.lineTo(W+8,H);cx2.closePath();cx2.fill();
   var wet=(H-ys)*0.82;
-  g=cx2.createLinearGradient(0,ys,0,ys+wet);g.addColorStop(0,'rgba(16,28,44,.95)');g.addColorStop(0.55,'rgba(24,36,52,.8)');g.addColorStop(1,'rgba(24,36,52,0)');
+  g=cx2.createLinearGradient(0,ys,0,ys+wet);g.addColorStop(0,'rgba(12,44,78,.95)');g.addColorStop(0.55,'rgba(22,52,84,.78)');g.addColorStop(1,'rgba(22,52,84,0)');
   cx2.fillStyle=g;cx2.beginPath();cx2.moveTo(0,shoreY(0,ys,mv));
   for(x=0;x<=W+8;x+=6) cx2.lineTo(x,shoreY(x,ys,mv));
   cx2.lineTo(W+8,H);cx2.lineTo(0,H);cx2.closePath();cx2.fill();
@@ -1310,9 +1330,9 @@ function drawSky(t){
   layout.forEach(function(L){if(!L.sea)bottle(L,t);});
   layout.forEach(bottleLabel);
   /* lens: darker corners and a fine film grain */
-  g=cx2.createRadialGradient(W/2,H*0.56,Math.min(W,H)*0.42,W/2,H*0.56,Math.max(W,H)*0.78);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.5)');
+  g=cx2.createRadialGradient(W/2,H*0.56,Math.min(W,H)*0.42,W/2,H*0.56,Math.max(W,H)*0.78);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,10,.3)');
   cx2.fillStyle=g;cx2.fillRect(0,0,W,H);
-  if(grainPat){var go=reduce?0:(Math.floor(t/90)*37)%96;cx2.save();cx2.globalAlpha=0.07;cx2.translate(-go,-((go*7)%96));cx2.fillStyle=grainPat;cx2.fillRect(0,0,W+96,H+96);cx2.restore();}
+  if(grainPat){var go=reduce?0:(Math.floor(t/90)*37)%96;cx2.save();cx2.globalAlpha=0.035;cx2.translate(-go,-((go*7)%96));cx2.fillStyle=grainPat;cx2.fillRect(0,0,W+96,H+96);cx2.restore();}
 }
 function resize(){
   var rect=cv.getBoundingClientRect(), d=Math.min(2,window.devicePixelRatio||1);
