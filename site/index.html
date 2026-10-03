@@ -157,7 +157,7 @@ a.btn{font:600 1.02rem/1 var(--body);color:var(--amber-ink);background:var(--amb
 .pad:focus{box-shadow:0 0 0 4px rgba(221,154,78,.4),0 18px 40px rgba(0,0,0,.35)}
 .pad.short{min-height:9rem}
 .summary{min-height:23.4rem}
-.inkrow{display:flex;align-items:center;gap:12px;color:var(--dim);font-size:1.05rem;flex:1 1 auto;min-width:0}
+.inkrow{display:flex;align-items:center;gap:12px;color:var(--dim);font-size:1.05rem;flex:1 1 auto;min-width:0;flex-wrap:wrap}
 .inkrow button{width:38px;height:38px;padding:0;border-radius:50%;border:3px solid transparent;background:var(--c);flex:none}
 .inkrow button.notedot{border-radius:5px}
 .inkrow button[aria-pressed="true"]{border-color:var(--text)}
@@ -200,6 +200,11 @@ a.btn{font:600 1.02rem/1 var(--body);color:var(--amber-ink);background:var(--amb
 .rate{display:flex;gap:2px;align-items:center}
 .rate button{padding:2px 4px;border:0;background:transparent;font-size:1.4rem;color:var(--hair-2)}
 .rate button.on{color:var(--amber)}
+.copy{border-left:3px solid var(--amber);padding:4px 0 4px 16px;display:flex;flex-direction:column;gap:8px}
+.copy-name{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;overflow-wrap:anywhere;margin:0}
+.copy .row{flex-wrap:wrap;align-items:center}
+.linkbtn{font:500 .9rem/1 var(--body);color:var(--dim);padding:8px 10px;text-decoration:underline;text-underline-offset:4px;text-decoration-color:var(--hair-2)}
+.linkbtn:hover{color:var(--text)}
 .about{border-left:3px solid var(--amber);padding:4px 0 4px 16px;display:flex;flex-direction:column;gap:6px}
 .logbox{background:var(--bg-2);border:1px solid var(--hair);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
 .finish{border-color:var(--amber)}
@@ -942,6 +947,65 @@ function keptPanel(){
     return el('li',null,el('p',{class:'hand',style:'font-size:1.4rem',text:q[0]}),el('p',{class:'small dim'},q[1]+', '+q[2]+' ',
       el('button',{class:'ghost','aria-label':'Throw back this line by '+q[1],text:'Throw back',onclick:function(){settings.kept=settings.kept.filter(function(x){return x!==q[0];});save('settings');refresh();}})));})));
 }
+
+/* ---------- digital copy of the book (kept on this device) ---------- */
+var fdb=null, COPY_MAX=80*1024*1024;
+function filesDB(){
+  if(fdb) return fdb;
+  fdb=new Promise(function(res,rej){try{var r=indexedDB.open('bottled-pages-files',1);
+    r.onupgradeneeded=function(){r.result.createObjectStore('f');};
+    r.onsuccess=function(){res(r.result);};r.onerror=function(){rej(r.error);};r.onblocked=function(){rej(new Error('blocked'));};}catch(x){rej(x);}});
+  fdb.catch(function(){fdb=null;}); return fdb;
+}
+function fileOp(mode,fn){return filesDB().then(function(db){return new Promise(function(res,rej){
+  var tx=db.transaction('f',mode), rq=fn(tx.objectStore('f'));
+  tx.oncomplete=function(){res(rq&&rq.result);};tx.onerror=tx.onabort=function(){rej(tx.error||new Error('storage'));};});});}
+function fmtSize(n){return n>=1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';}
+function copyKind(f){var n=(f.name||'').toLowerCase();return /\.pdf$/.test(n)||f.type==='application/pdf'?'PDF':/\.epub$/.test(n)?'EPUB':/\.txt$/.test(n)?'Text':/\.(mobi|azw3?)$/.test(n)?'Kindle':'File';}
+function attachCopy(b,f,note){
+  if(f.size>COPY_MAX){note.textContent='That file is '+fmtSize(f.size)+'. The limit is '+fmtSize(COPY_MAX)+'.';return;}
+  note.textContent='Saving your copy…';
+  f.arrayBuffer().then(function(buf){return fileOp('readwrite',function(st){return st.put({buf:buf,type:f.type||'application/octet-stream',name:f.name},b.id);});})
+   .then(function(){b.file={name:String(f.name).slice(0,160),size:f.size,type:f.type||'',at:Date.now()};save(b.id);refresh();toast('Your copy is stowed with this book.');
+     if(navigator.storage&&navigator.storage.persist) navigator.storage.persist().catch(function(){});},
+     function(){note.textContent='This browser would not store the file. Free some space, or try a smaller file.';});
+}
+function getCopy(b){return fileOp('readonly',function(st){return st.get(b.id);}).then(function(r){
+  if(!r) throw new Error('missing'); return new File([r.buf],r.name||b.file.name,{type:r.type||''});});}
+function copyMissing(b,note){note.textContent='The file is not on this device. It only lives where you attached it. Attach it again here.';}
+function sweepCopies(){ if(mode==='loading'||!('indexedDB' in window)) return;
+  var keep={};books.forEach(function(b){if(b.file)keep[b.id]=1;});
+  fileOp('readonly',function(st){return st.getAllKeys();}).then(function(keys){(keys||[]).forEach(function(k){if(!keep[k])fileOp('readwrite',function(st){return st.delete(k);}).catch(function(){});});},function(){});}
+document.addEventListener('visibilitychange',function(){if(document.hidden)sweepCopies();});
+function copyPanel(b){
+  var note=el('p',{class:'small dim',role:'status'}), q=encodeURIComponent((b.title+' '+(b.author||'')).trim());
+  var box=el('div',{class:'copy'},el('span',{class:'label',text:'Digital copy'}));
+  var pick=function(label){return el('label',{class:'filebtn'},label,el('input',{id:'copy-file',type:'file',accept:'.pdf,.epub,.txt,.mobi,.azw,.azw3,application/pdf,application/epub+zip,text/plain',
+    onchange:function(e){var f=e.target.files&&e.target.files[0]; if(f) attachCopy(b,f,note);}}));};
+  if(b.file){
+    var kind=copyKind(b.file);
+    box.append(el('p',{class:'copy-name'},el('span',{class:'badge',text:kind}),' ',el('span',{text:b.file.name}),' ',el('span',{class:'dim small',text:fmtSize(b.file.size)})));
+    var row=el('div',{class:'row'});
+    if(kind==='PDF'||kind==='Text') row.append(el('button',{class:'primary',text:'Read it',onclick:function(){
+      var w=window.open('','_blank');
+      getCopy(b).then(function(f){var u=URL.createObjectURL(f);if(w)w.location=u;else location.href=u;},function(){if(w)w.close();copyMissing(b,note);});}}));
+    row.append(el('button',{class:kind==='PDF'||kind==='Text'?'':'primary',text:'Download',onclick:function(){
+      getCopy(b).then(function(f){var u=URL.createObjectURL(f),a=el('a',{href:u,download:f.name});document.body.append(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},4000);},function(){copyMissing(b,note);});}}));
+    if(navigator.canShare) row.append(el('button',{text:'Open in another app',onclick:function(){
+      getCopy(b).then(function(f){if(!navigator.canShare({files:[f]})){note.textContent='This device cannot hand that file to another app. Use Download.';return;}
+        return navigator.share({files:[f],title:b.title}).catch(function(){});},function(){copyMissing(b,note);});}}));
+    box.append(row,el('div',{class:'row'},pick('Replace file'),el('button',{class:'ghost small',text:'Remove copy',onclick:function(){
+      var old=b.file;delete b.file;save(b.id);refresh();
+      toastUndo('Copy removed.',function(){b.file=old;save(b.id);refresh();});}})));
+  } else {
+    box.append(el('p',{class:'small dim',text:'Attach your own e-book or PDF and it travels with this bottle. Read it or download it again whenever you like.'}),
+      el('div',{class:'row'},pick('Attach a file'),
+        el('a',{class:'linkbtn',href:'https://www.gutenberg.org/ebooks/search/?query='+q,target:'_blank',rel:'noopener',text:'Find a free copy'}),
+        el('a',{class:'linkbtn',href:'https://openlibrary.org/search?q='+q+'&mode=ebooks',target:'_blank',rel:'noopener',text:'Borrow from Open Library'})));
+  }
+  box.append(note,el('p',{class:'small dim',text:'The file stays on this device only. It is not included in exports or share links.'}));
+  return box;
+}
 function authorQuote(b){
   if(!b.author) return null; var last=b.author.trim().split(/\s+/).pop().toLowerCase();
   var q=QUOTES.filter(function(x){return x[1].toLowerCase().split(/\s+/).pop()===last;})[0];
@@ -1247,6 +1311,7 @@ function renderNotebook(){
       return el('button',{class:(b.rating||0)>=n?'on':'','aria-label':n+' out of 5','aria-pressed':b.rating===n?'true':'false',text:'★',
         onclick:function(){b.rating=b.rating===n?0:n;save(b.id);refresh();}});}))));
   var aq=authorQuote(b); if(aq) p.append(aq);
+  p.append(copyPanel(b));
   if(b.blurb) p.append(el('div',{class:'about'},el('span',{class:'label',text:'About this book'}),el('p',{class:'small',text:b.blurb})));
   else if(canLookup()) p.append(el('div',null,el('button',{id:'about-btn',text:standalone&&!b.cover?'Find cover and description':'Get a short description',onclick:async function(e){
     var btn=e.currentTarget;btn.disabled=true;btn.textContent='Looking it up…';
